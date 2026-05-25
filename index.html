@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GridIron Fantasy League</title>
+
+  <!--
+    ============================================================
+    GRIDIRION FANTASY LEAGUE — MVP Dashboard
+    ============================================================
+    Hosting: Drop index.html into any GitHub Pages repo.
+    No build step. No server. No frameworks.
+
+    TO CONNECT REAL GOOGLE SHEETS DATA:
+    1. In Google Sheets → File → Share → Publish to web → CSV
+    2. Copy the published URL
+    3. Find GOOGLE_SHEETS_CONFIG below and replace the mock URLs
+    4. Optionally deploy a Google Apps Script Web App for signups
+    ============================================================
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ============================================================
+       CSS CUSTOM PROPERTIES — Edit these to retheme the whole app
+       ============================================================ */
+    :root {
+      --bg:          #0a0c0f;
+      --surface:     #111418;
+      --surface2:    #181c22;
+      --border:      #232830;
+      --border2:     #2e3540;
+      --accent:      #e8a020;
+      --accent2:     #c47010;
+      --green:       #2ecc71;
+      --red:         #e74c3c;
+      --muted:       #5a6270;
+      --text:        #d8dde6;
+      --text-dim:    #8892a0;
+      --heading:     #f0f4f8;
+      --radius:      4px;
+      --font-ui:     'Barlow Condensed', sans-serif;
+      --font-mono:   'IBM Plex Mono', monospace;
+    }
+
+    /* ---- Reset ---- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- Layout ---- */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+    /* ---- Header ---- */
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 0 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      gap: 16px;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      color: var(--heading);
+      white-space: nowrap;
+    }
+    .logo span { color: var(--accent); }
+    nav { display: flex; gap: 4px; flex-wrap: wrap; }
+    nav a {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 6px 10px;
+      border-radius: var(--radius);
+      transition: color .15s, background .15s;
+    }
+    nav a:hover, nav a:focus {
+      color: var(--accent);
+      background: rgba(232,160,32,.08);
+      text-decoration: none;
+    }
+
+    /* ---- Hero banner ---- */
+    .hero {
+      background: linear-gradient(135deg, #0d1117 0%, #141920 60%, #1a1000 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 16px 40px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 6vw, 64px);
+      font-weight: 900;
+      letter-spacing: .03em;
+      color: var(--heading);
+      line-height: 1.1;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      margin-top: 12px;
+      font-size: 16px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    .stat-row {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      text-align: center;
+    }
+    .stat-box .num {
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-box .lbl {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ---- Section titles ---- */
+    .section { padding: 40px 16px; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+      margin-bottom: 24px;
+    }
+    h2.block-heading {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 900;
+      color: var(--heading);
+      letter-spacing: .02em;
+      margin-bottom: 20px;
+    }
+
+    /* ---- Conference grid ---- */
+    .conf-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 700px) { .conf-grid { grid-template-columns: 1fr; } }
+
+    .conf-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .conf-header {
+      padding: 12px 16px;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--heading);
+      border-bottom: 2px solid var(--accent);
+      background: var(--surface2);
+    }
+    .conf-header small {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-left: 8px;
+      text-transform: uppercase;
+    }
+
+    .division-block { border-bottom: 1px solid var(--border); }
+    .division-block:last-child { border-bottom: none; }
+    .division-name {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 10px 16px 6px;
+      background: rgba(255,255,255,.02);
+    }
+    .team-list { padding: 0 16px 10px; }
+
+    .team-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .team-row:last-child { border-bottom: none; }
+    .team-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    .team-name.claimed { color: var(--muted); }
+
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .04em;
+      padding: 2px 8px;
+      border-radius: 2px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-available { background: rgba(46,204,113,.12); color: var(--green); border: 1px solid rgba(46,204,113,.25); }
+    .badge-claimed   { background: rgba(90,98,112,.12);  color: var(--muted);  border: 1px solid rgba(90,98,112,.25); }
+
+    .btn-claim {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 4px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+      white-space: nowrap;
+    }
+    .btn-claim:hover { background: var(--accent2); }
+    .btn-claim:disabled { opacity: .35; cursor: not-allowed; background: var(--muted); color: var(--bg); }
+
+    /* Unclaim button — sits next to claimed badge */
+    .btn-unclaim {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--red);
+      border: 1px solid rgba(231,76,60,.35);
+      padding: 3px 9px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .btn-unclaim:hover { background: rgba(231,76,60,.12); border-color: var(--red); }
+
+    /* ---- Signup modal ---- */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.72);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-top: 3px solid var(--accent);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 440px;
+      padding: 28px 28px 24px;
+    }
+    .modal h3 {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--heading);
+      margin-bottom: 4px;
+    }
+    .modal .modal-sub {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    .modal label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .modal input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .modal input:focus { border-color: var(--accent); }
+    .modal .privacy-note {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      margin-bottom: 20px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,.03);
+      border-radius: var(--radius);
+    }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-cancel {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border2);
+      padding: 8px 18px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-cancel:hover { border-color: var(--text-dim); color: var(--text); }
+    .btn-submit {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 20px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-submit:hover { background: var(--accent2); }
+    #modal-error {
+      font-size: 12px;
+      color: var(--red);
+      font-family: var(--font-mono);
+      min-height: 16px;
+      margin-bottom: 8px;
+    }
+
+    /* ---- Standings ---- */
+    .standings-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .standings-controls select {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      padding: 7px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      outline: none;
+    }
+    .standings-controls select:focus { border-color: var(--accent); }
+    .btn-refresh {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 7px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .btn-refresh:hover { background: var(--accent); color: #000; }
+    #refresh-status {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .standings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .standings-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .standings-card-header {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 9px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .standings-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .standings-table th {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 7px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+    }
+    .standings-table th:not(:first-child) { text-align: center; }
+    .standings-table td {
+      padding: 7px 14px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .standings-table tr:last-child td { border-bottom: none; }
+    .standings-table td:not(:first-child) {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .standings-table tr:hover td { background: rgba(255,255,255,.025); }
+    .rank-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-right: 6px;
+    }
+    .win-pct { color: var(--accent); }
+
+    /* ---- Toast ---- */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-left: 3px solid var(--green);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      z-index: 300;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ---- Footer ---- */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 16px;
+      text-align: center;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+    }
+    footer a { color: var(--muted); text-decoration: underline; }
+
+    /* ---- Utility ---- */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+    @media (max-width: 480px) {
+      .modal { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header>
+  <div class="header-inner">
+    <div class="logo">Grid<span>Iron</span> FL</div>
+    <nav>
+      <a href="#league">League</a>
+      <a href="#signup">Signup</a>
+      <a href="#standings">Standings</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero">
+  <h1>GridIron <span>Fantasy</span> League</h1>
+  <p id="hero-sub">Season 1 · Claim your team · Compete weekly</p>
+  <div class="stat-row">
+    <div class="stat-box">
+      <div class="num" id="stat-total">32</div>
+      <div class="lbl">Total Teams</div>
+    </div>
+    <div class="stat-box">
+      <div class="num" id="stat-available">—</div>
+      <div class="lbl">Available</div>
+    </div>
+    <div class="stat-box">
+      <div class="num" id="stat-claimed">—</div>
+      <div class="lbl">Claimed</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">8</div>
+      <div class="lbl">Divisions</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     LEAGUE OVERVIEW  (conferences + divisions + teams)
+     ============================================================ -->
+<section class="section container" id="league">
+  <p class="section-title">League Structure</p>
+  <h2 class="block-heading">Conferences &amp; Divisions</h2>
+  <div class="conf-grid" id="conference-grid">
+    <!-- Populated by JS -->
+    <p style="color:var(--muted);font-family:var(--font-mono);font-size:13px">Loading league data…</p>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================================================
+     TEAM SIGNUP
+     ============================================================ -->
+<section class="section container" id="signup">
+  <p class="section-title">Anonymous Signup</p>
+  <h2 class="block-heading">Claim a Team</h2>
+  <p style="color:var(--text-dim);font-size:15px;max-width:560px;margin-bottom:24px">
+    Click <strong style="color:var(--accent)">Claim</strong> next to any available team above.
+    Your identity is never displayed publicly — only your chosen display name is shown on your team card.
+  </p>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;max-width:460px;font-family:var(--font-mono);font-size:12px;color:var(--muted);line-height:1.8">
+    🔒 <strong style="color:var(--text-dim)">Privacy note:</strong> Email addresses (optional) are stored privately
+    in Google Sheets and never shown in this dashboard. Claim data is only visible to the commissioner.
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================================================
+     STANDINGS
+     ============================================================ -->
+<section class="section container" id="standings">
+  <p class="section-title">Weekly Standings</p>
+  <h2 class="block-heading">Division Standings</h2>
+
+  <div class="standings-controls">
+    <select id="standings-filter">
+      <option value="all">All Divisions</option>
+      <!-- Options populated by JS -->
+    </select>
+    <button class="btn-refresh" onclick="refreshStandings()">↻ Refresh</button>
+    <span id="refresh-status">Last updated: —</span>
+  </div>
+
+  <div class="standings-grid" id="standings-grid">
+    <!-- Populated by JS -->
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer>
+  <p>GridIron Fantasy League · MVP v1.0 · Hosted on GitHub Pages</p>
+  <p style="margin-top:6px">
+    Data source: <a href="#" id="footer-sheet-link" target="_blank">Google Sheets</a>
+    &nbsp;·&nbsp; Built with plain HTML / CSS / JS
+  </p>
+</footer>
+
+<!-- ============================================================
+     SIGNUP MODAL
+     ============================================================ -->
+<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <h3 id="modal-title">Claim Team</h3>
+    <p class="modal-sub" id="modal-team-label">— Select a team —</p>
+
+    <label for="input-name">Display Name *</label>
+    <input id="input-name" type="text" placeholder="Your name or alias" maxlength="32" autocomplete="off" />
+
+    <label for="input-email">Email <span style="font-size:10px;color:var(--muted)">(optional · private)</span></label>
+    <input id="input-email" type="email" placeholder="you@example.com" autocomplete="off" />
+
+    <label for="input-pin">
+      4-Digit PIN *
+      <span style="font-size:10px;color:var(--muted)">(you'll need this to release the team later)</span>
+    </label>
+    <input
+      id="input-pin"
+      type="password"
+      inputmode="numeric"
+      maxlength="4"
+      placeholder="••••"
+      autocomplete="off"
+    />
+
+    <p class="privacy-note">
+      Your email and PIN are stored locally in your browser. The PIN is never shown publicly —
+      it only lets <em>you</em> release this team if you change your mind.
+    </p>
+
+    <p id="modal-error"></p>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" onclick="handleSubmit()">Claim Team</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     UNCLAIM CONFIRMATION MODAL
+     A PIN set at claim time is required to release a team.
+     This prevents other users from unclaiming someone else's team.
+     ============================================================ -->
+<div class="modal-backdrop" id="unclaim-backdrop" role="dialog" aria-modal="true" aria-labelledby="unclaim-title">
+  <div class="modal" style="border-top-color: var(--red);">
+    <h3 id="unclaim-title" style="color:var(--red)">Release Team</h3>
+    <p class="modal-sub" id="unclaim-team-label">— team name —</p>
+
+    <p style="font-size:14px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">
+      Enter the <strong style="color:var(--text)">4-digit PIN</strong> you chose when you claimed
+      this team. This releases the team so someone else can claim it.
+    </p>
+
+    <label for="unclaim-pin">PIN *</label>
+    <input
+      id="unclaim-pin"
+      type="password"
+      inputmode="numeric"
+      maxlength="4"
+      placeholder="••••"
+      autocomplete="off"
+    />
+
+    <p id="unclaim-error" style="font-size:12px;color:var(--red);font-family:var(--font-mono);min-height:16px;margin-bottom:12px;"></p>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeUnclaimModal()">Cancel</button>
+      <button
+        id="unclaim-submit-btn"
+        class="btn-submit"
+        style="background:var(--red);color:#fff;"
+        onclick="handleUnclaim()"
+      >Release Team</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOAST NOTIFICATION
+     ============================================================ -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+  // =============================================================
+  //  CONFIGURATION
+  //  ——————————————
+  //  Replace the URLs below with your real Google Sheets links
+  //  when you're ready to go live.
+  //
+  //  HOW TO PUBLISH A GOOGLE SHEET AS JSON:
+  //  1. Open your Google Sheet
+  //  2. File → Share → Publish to web
+  //  3. Choose "Comma-separated values (.csv)" for a sheet tab
+  //  4. Copy the published URL
+  //  5. Use a CSV-to-JSON converter or a Google Apps Script
+  //     Web App (see APPS_SCRIPT_URL below) to serve JSON.
+  //
+  //  HOW TO DEPLOY A GOOGLE APPS SCRIPT WEB APP FOR SIGNUPS:
+  //  1. In the Sheet → Extensions → Apps Script
+  //  2. Write a doPost(e) function that appends a row to a sheet
+  //  3. Deploy → New deployment → Web app → "Anyone" can access
+  //  4. Paste the web app URL into APPS_SCRIPT_URL below
+  // =============================================================
+  const GOOGLE_SHEETS_CONFIG = {
+    // ─── Paste your deployed Apps Script Web App URL here ───────────────────────
+    // After deploying (see apps-script.gs setup instructions), replace this URL.
+    // The same URL handles claims, releases, and standings — all via action param.
+    APPS_SCRIPT_URL:  'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
+
+    // Link shown in footer (optional — your Google Sheet's shareable URL)
+    SHEET_PUBLIC_URL: 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit',
+  };
+
+  // Returns true if a real Apps Script URL has been configured
+  function isLive() {
+    return GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL.indexOf('YOUR_SCRIPT_ID') === -1;
+  }
+
+  // =============================================================
+  //  MOCK DATA
+  //  ——————————
+  //  This is the source of truth for the MVP until you hook up
+  //  a real Google Sheet. Edit team names and standings here.
+  //  The structure mirrors what loadLeagueData() will eventually
+  //  parse from the Google Sheet CSV.
+  // =============================================================
+  const MOCK_LEAGUE = {
+    conferences: [
+      { id: 'afc', name: 'AFC', fullName: 'American Football Conference' },
+      { id: 'nfc', name: 'NFC', fullName: 'National Football Conference' },
+    ],
+    divisions: [
+      { id: 'afc-north', confId: 'afc', name: 'North' },
+      { id: 'afc-south', confId: 'afc', name: 'South' },
+      { id: 'afc-east',  confId: 'afc', name: 'East'  },
+      { id: 'afc-west',  confId: 'afc', name: 'West'  },
+      { id: 'nfc-north', confId: 'nfc', name: 'North' },
+      { id: 'nfc-south', confId: 'nfc', name: 'South' },
+      { id: 'nfc-east',  confId: 'nfc', name: 'East'  },
+      { id: 'nfc-west',  confId: 'nfc', name: 'West'  },
+    ],
+    teams: [
+      // AFC North
+      { id: 't01', divId: 'afc-north', name: 'Baltimore Ravens'     },
+      { id: 't02', divId: 'afc-north', name: 'Cincinnati Bengals'   },
+      { id: 't03', divId: 'afc-north', name: 'Cleveland Browns'     },
+      { id: 't04', divId: 'afc-north', name: 'Pittsburgh Steelers'  },
+      // AFC South
+      { id: 't05', divId: 'afc-south', name: 'Houston Texans'       },
+      { id: 't06', divId: 'afc-south', name: 'Indianapolis Colts'   },
+      { id: 't07', divId: 'afc-south', name: 'Jacksonville Jaguars' },
+      { id: 't08', divId: 'afc-south', name: 'Tennessee Titans'     },
+      // AFC East
+      { id: 't09', divId: 'afc-east',  name: 'Buffalo Bills'        },
+      { id: 't10', divId: 'afc-east',  name: 'Miami Dolphins'       },
+      { id: 't11', divId: 'afc-east',  name: 'New England Patriots' },
+      { id: 't12', divId: 'afc-east',  name: 'New York Jets'        },
+      // AFC West
+      { id: 't13', divId: 'afc-west',  name: 'Denver Broncos'       },
+      { id: 't14', divId: 'afc-west',  name: 'Kansas City Chiefs'   },
+      { id: 't15', divId: 'afc-west',  name: 'Las Vegas Raiders'    },
+      { id: 't16', divId: 'afc-west',  name: 'Los Angeles Chargers' },
+      // NFC North
+      { id: 't17', divId: 'nfc-north', name: 'Chicago Bears'        },
+      { id: 't18', divId: 'nfc-north', name: 'Detroit Lions'        },
+      { id: 't19', divId: 'nfc-north', name: 'Green Bay Packers'    },
+      { id: 't20', divId: 'nfc-north', name: 'Minnesota Vikings'    },
+      // NFC South
+      { id: 't21', divId: 'nfc-south', name: 'Atlanta Falcons'      },
+      { id: 't22', divId: 'nfc-south', name: 'Carolina Panthers'    },
+      { id: 't23', divId: 'nfc-south', name: 'New Orleans Saints'   },
+      { id: 't24', divId: 'nfc-south', name: 'Tampa Bay Buccaneers' },
+      // NFC East
+      { id: 't25', divId: 'nfc-east',  name: 'Dallas Cowboys'       },
+      { id: 't26', divId: 'nfc-east',  name: 'New York Giants'      },
+      { id: 't27', divId: 'nfc-east',  name: 'Philadelphia Eagles'  },
+      { id: 't28', divId: 'nfc-east',  name: 'Washington Commanders'},
+      // NFC West
+      { id: 't29', divId: 'nfc-west',  name: 'Arizona Cardinals'    },
+      { id: 't30', divId: 'nfc-west',  name: 'Los Angeles Rams'     },
+      { id: 't31', divId: 'nfc-west',  name: 'San Francisco 49ers'  },
+      { id: 't32', divId: 'nfc-west',  name: 'Seattle Seahawks'     },
+    ],
+    // Mock standings — replace with real data from Google Sheets.
+    // Columns: teamId, wins, losses
+    standings: [
+      { teamId: 't01', wins: 5, losses: 2 },
+      { teamId: 't02', wins: 4, losses: 3 },
+      { teamId: 't03', wins: 3, losses: 4 },
+      { teamId: 't04', wins: 1, losses: 6 },
+      { teamId: 't05', wins: 6, losses: 1 },
+      { teamId: 't06', wins: 4, losses: 3 },
+      { teamId: 't07', wins: 3, losses: 4 },
+      { teamId: 't08', wins: 2, losses: 5 },
+      { teamId: 't09', wins: 5, losses: 2 },
+      { teamId: 't10', wins: 5, losses: 2 },
+      { teamId: 't11', wins: 3, losses: 4 },
+      { teamId: 't12', wins: 2, losses: 5 },
+      { teamId: 't13', wins: 7, losses: 0 },
+      { teamId: 't14', wins: 4, losses: 3 },
+      { teamId: 't15', wins: 3, losses: 4 },
+      { teamId: 't16', wins: 0, losses: 7 },
+      { teamId: 't17', wins: 6, losses: 1 },
+      { teamId: 't18', wins: 5, losses: 2 },
+      { teamId: 't19', wins: 2, losses: 5 },
+      { teamId: 't20', wins: 1, losses: 6 },
+      { teamId: 't21', wins: 4, losses: 3 },
+      { teamId: 't22', wins: 4, losses: 3 },
+      { teamId: 't23', wins: 3, losses: 4 },
+      { teamId: 't24', wins: 3, losses: 4 },
+      { teamId: 't25', wins: 5, losses: 2 },
+      { teamId: 't26', wins: 4, losses: 3 },
+      { teamId: 't27', wins: 3, losses: 4 },
+      { teamId: 't28', wins: 2, losses: 5 },
+      { teamId: 't29', wins: 6, losses: 1 },
+      { teamId: 't30', wins: 4, losses: 3 },
+      { teamId: 't31', wins: 3, losses: 4 },
+      { teamId: 't32', wins: 1, losses: 6 },
+    ],
+  };
+
+  // =============================================================
+  //  RUNTIME STATE
+  //  —————————————
+  //  claimedTeams: { teamId → displayName }
+  //  Stored in localStorage so claims survive page refreshes.
+  //  In production this would be fetched from Google Sheets.
+  // =============================================================
+  let leagueData   = null; // populated by loadLeagueData()
+  let claimedTeams = {};   // { teamId → displayName }  — from localStorage + Google Sheets
+  let claimPins    = {};   // { teamId → hashedPIN }    — stored only in localStorage (never sent publicly)
+
+  // Which team is currently being claimed / unclaimed (used by modals)
+  let pendingTeamId        = null;
+  let pendingUnclaimTeamId = null;
+
+  // =============================================================
+  //  GOOGLE SHEETS INTEGRATION HOOKS
+  //  ————————————————————————————————
+  //  These three functions are the only ones you need to update
+  //  when connecting real Google Sheets data. The rest of the
+  //  app just reads from `leagueData` and `claimedTeams`.
+  // =============================================================
+
+  /**
+   * loadLeagueData()
+   * ----------------
+   * Fetches league structure (conferences, divisions, teams) from
+   * Google Sheets CSV/JSON. Falls back to MOCK_LEAGUE for the MVP.
+   *
+   * TO CONNECT REAL DATA:
+   * 1. Publish your Google Sheet as CSV (File → Share → Publish to web)
+   * 2. Replace the fetch URL with GOOGLE_SHEETS_CONFIG.LEAGUE_DATA_URL
+   * 3. Parse the CSV rows into the same { conferences, divisions, teams } shape
+   */
+  async function loadLeagueData() {
+    // ---- MVP: use mock data directly ----
+    // LIVE: uncomment the fetch block below and remove the mock return
+
+    // try {
+    //   const res = await fetch(GOOGLE_SHEETS_CONFIG.LEAGUE_DATA_URL);
+    //   const csv = await res.text();
+    //   return parseLeagueCSV(csv);   // you'll write this parser
+    // } catch (err) {
+    //   console.warn('loadLeagueData: falling back to mock data', err);
+    // }
+
+    return MOCK_LEAGUE;
+  }
+
+  /**
+   * loadStandings()
+   * ---------------
+   * Fetches current win/loss records from Google Sheets.
+   * Returns an array of { teamId, wins, losses }.
+   *
+   * TO CONNECT REAL DATA:
+   * 1. Publish your standings sheet tab as CSV
+   * 2. Replace the fetch URL with GOOGLE_SHEETS_CONFIG.STANDINGS_URL
+   * 3. Parse CSV rows → { teamId, wins, losses } objects
+   */
+  async function loadStandings() {
+    // ---- MVP: use mock standings ----
+    // LIVE: uncomment the fetch block below
+
+    // try {
+    //   const res = await fetch(GOOGLE_SHEETS_CONFIG.STANDINGS_URL);
+    //   const csv = await res.text();
+    //   return parseStandingsCSV(csv);
+    // } catch (err) {
+    //   console.warn('loadStandings: falling back to mock data', err);
+    // }
+
+    return MOCK_LEAGUE.standings;
+  }
+
+  /**
+   * submitClaim(teamId, displayName, email)
+   * ----------------------------------------
+   * Sends a signup claim to your Google Apps Script Web App.
+   * Returns true on success, false on failure.
+   *
+   * TO CONNECT REAL DATA:
+   * 1. Deploy an Apps Script Web App (doPost) that appends a row
+   * 2. Replace the fetch URL with GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL
+   * 3. Remove the mock setTimeout below
+   */
+  async function submitClaim(teamId, displayName, email) {
+    // ---- MVP: simulate async submission ----
+    // LIVE: uncomment the fetch block below
+
+    // try {
+    //   const res = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL, {
+    //     method: 'POST',
+    //     body: JSON.stringify({ teamId, displayName, email, timestamp: new Date().toISOString() }),
+    //     headers: { 'Content-Type': 'application/json' }
+    //   });
+    //   const data = await res.json();
+    //   if (!data.success) throw new Error(data.message || 'Submission failed');
+    //   return true;
+    // } catch (err) {
+    //   console.error('submitClaim error:', err);
+    //   return false;
+    // }
+
+    // Mock: always succeed after a short delay
+    await new Promise(r => setTimeout(r, 600));
+    return true;
+  }
+
+  // =============================================================
+  //  LOCAL PERSISTENCE
+  //  —————————————————
+  //  Saves/loads claimed teams to localStorage so the UI
+  //  stays consistent across refreshes in the MVP.
+  //  In production the source of truth is Google Sheets.
+  // =============================================================
+
+  function saveClaimedTeams() {
+    try {
+      localStorage.setItem('gfl_claimed', JSON.stringify(claimedTeams));
+      localStorage.setItem('gfl_pins',    JSON.stringify(claimPins));
+    }
+    catch (e) { /* localStorage unavailable */ }
+  }
+
+  function loadClaimedTeamsFromStorage() {
+    try {
+      const raw = localStorage.getItem('gfl_claimed');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function loadPinsFromStorage() {
+    try {
+      const raw = localStorage.getItem('gfl_pins');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  // =============================================================
+  //  RENDER — LEAGUE STRUCTURE
+  // =============================================================
+
+  function renderLeague(data) {
+    const grid = document.getElementById('conference-grid');
+    grid.innerHTML = '';
+
+    for (const conf of data.conferences) {
+      const divs = data.divisions.filter(d => d.confId === conf.id);
+
+      const card = document.createElement('div');
+      card.className = 'conf-card';
+      card.innerHTML = `
+        <div class="conf-header">
+          ${conf.name} <small>${conf.fullName}</small>
+        </div>
+      `;
+
+      for (const div of divs) {
+        const teams = data.teams.filter(t => t.divId === div.id);
+
+        const block = document.createElement('div');
+        block.className = 'division-block';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'division-name';
+        nameEl.textContent = `${conf.name} ${div.name}`;
+        block.appendChild(nameEl);
+
+        const list = document.createElement('div');
+        list.className = 'team-list';
+
+        for (const team of teams) {
+          list.appendChild(buildTeamRow(team));
+        }
+
+        block.appendChild(list);
+        card.appendChild(block);
+      }
+
+      grid.appendChild(card);
+    }
+
+    updateHeroStats(data);
+  }
+
+  function buildTeamRow(team) {
+    const isClaimed = !!claimedTeams[team.id];
+    const row = document.createElement('div');
+    row.className = 'team-row';
+    row.dataset.teamId = team.id;
+
+    const displayName = isClaimed
+      ? `${team.name} <span style="color:var(--accent);font-size:12px">[${escHtml(claimedTeams[team.id])}]</span>`
+      : team.name;
+
+    row.innerHTML = `
+      <span class="team-name${isClaimed ? ' claimed' : ''}">${displayName}</span>
+      <span class="badge ${isClaimed ? 'badge-claimed' : 'badge-available'}">
+        ${isClaimed ? 'Claimed' : 'Available'}
+      </span>
+      ${isClaimed
+        ? `<button
+             class="btn-unclaim"
+             title="Release this team"
+             onclick="openUnclaimModal('${team.id}', '${escHtml(team.name)}')"
+           >✕ Release</button>`
+        : `<button
+             class="btn-claim"
+             data-team-id="${team.id}"
+             data-team-name="${escHtml(team.name)}"
+             onclick="openModal('${team.id}', '${escHtml(team.name)}')"
+           >Claim</button>`
+      }
+    `;
+
+    return row;
+  }
+
+  function refreshTeamRow(teamId) {
+    // Re-render only the changed row without full re-render
+    const existing = document.querySelector(`.team-row[data-team-id="${teamId}"]`);
+    if (!existing) return;
+    const team = leagueData.teams.find(t => t.id === teamId);
+    if (!team) return;
+    const newRow = buildTeamRow(team);
+    existing.replaceWith(newRow);
+  }
+
+  function updateHeroStats(data) {
+    const total = data.teams.length;
+    const claimed = Object.keys(claimedTeams).length;
+    document.getElementById('stat-total').textContent     = total;
+    document.getElementById('stat-available').textContent = total - claimed;
+    document.getElementById('stat-claimed').textContent   = claimed;
+  }
+
+  // =============================================================
+  //  RENDER — STANDINGS
+  // =============================================================
+
+  function renderStandings(standings) {
+    const grid = document.getElementById('standings-grid');
+    const filter = document.getElementById('standings-filter');
+    const selectedDiv = filter.value;
+
+    grid.innerHTML = '';
+
+    const divisions = selectedDiv === 'all'
+      ? leagueData.divisions
+      : leagueData.divisions.filter(d => d.id === selectedDiv);
+
+    for (const div of divisions) {
+      const conf = leagueData.conferences.find(c => c.id === div.confId);
+      const teams = leagueData.teams.filter(t => t.divId === div.id);
+
+      // Build rows sorted by wins desc
+      const rows = teams.map(team => {
+        const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
+        const played = s.wins + s.losses;
+        const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
+        const displayName = claimedTeams[team.id]
+          ? `${team.name} <span style="color:var(--accent);font-size:11px">[${escHtml(claimedTeams[team.id])}]</span>`
+          : team.name;
+        return { ...s, pct, displayName, wins: s.wins, losses: s.losses };
+      }).sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+
+      const card = document.createElement('div');
+      card.className = 'standings-card';
+      card.innerHTML = `
+        <div class="standings-card-header">${conf.name} ${div.name}</div>
+        <table class="standings-table">
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>W</th>
+              <th>L</th>
+              <th>PCT</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r, i) => `
+              <tr>
+                <td><span class="rank-num">${i + 1}</span>${r.displayName}</td>
+                <td>${r.wins}</td>
+                <td>${r.losses}</td>
+                <td class="win-pct">${r.pct}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      grid.appendChild(card);
+    }
+
+    document.getElementById('refresh-status').textContent =
+      'Last updated: ' + new Date().toLocaleTimeString();
+  }
+
+  async function refreshStandings() {
+    document.getElementById('refresh-status').textContent = 'Refreshing…';
+    const standings = await loadStandings();
+    leagueData.standings = standings;
+    renderStandings(standings);
+  }
+
+  // Populate the division filter dropdown
+  function populateStandingsFilter() {
+    const sel = document.getElementById('standings-filter');
+    for (const conf of leagueData.conferences) {
+      const divs = leagueData.divisions.filter(d => d.confId === conf.id);
+      for (const div of divs) {
+        const opt = document.createElement('option');
+        opt.value = div.id;
+        opt.textContent = `${conf.name} ${div.name}`;
+        sel.appendChild(opt);
+      }
+    }
+    sel.addEventListener('change', () => renderStandings(leagueData.standings));
+  }
+
+  // =============================================================
+  //  MODAL — OPEN / CLOSE / SUBMIT
+  // =============================================================
+
+  function openModal(teamId, teamName) {
+    pendingTeamId = teamId;
+    document.getElementById('modal-team-label').textContent = 'Claiming: ' + teamName;
+    document.getElementById('input-name').value  = '';
+    document.getElementById('input-email').value = '';
+    document.getElementById('input-pin').value   = '';
+    document.getElementById('modal-error').textContent = '';
+    document.getElementById('modal-backdrop').classList.add('open');
+    document.getElementById('input-name').focus();
+  }
+
+  function closeModal() {
+    document.getElementById('modal-backdrop').classList.remove('open');
+    pendingTeamId = null;
+  }
+
+  async function handleSubmit() {
+    const name  = document.getElementById('input-name').value.trim();
+    const email = document.getElementById('input-email').value.trim();
+    const pin   = document.getElementById('input-pin').value.trim();
+    const errEl = document.getElementById('modal-error');
+
+    // Basic validation
+    if (!name) {
+      errEl.textContent = '⚠ Display name is required.';
+      return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errEl.textContent = '⚠ Please enter a valid email address.';
+      return;
+    }
+    if (!pin || !/^\d{4}$/.test(pin)) {
+      errEl.textContent = '⚠ PIN must be exactly 4 digits.';
+      return;
+    }
+    if (!pendingTeamId) {
+      errEl.textContent = '⚠ No team selected.';
+      return;
+    }
+    if (claimedTeams[pendingTeamId]) {
+      errEl.textContent = '⚠ This team was already claimed.';
+      return;
+    }
+
+    errEl.textContent = '';
+
+    // Disable submit while in-flight
+    const submitBtn = document.querySelector('.btn-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    const ok = await submitClaim(pendingTeamId, name, email);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Claim Team';
+
+    if (ok) {
+      // Store claim + hashed PIN in local state
+      claimedTeams[pendingTeamId] = name;
+      claimPins[pendingTeamId]    = simpleHash(pin);
+      saveClaimedTeams();
+
+      // Update UI without full re-render
+      refreshTeamRow(pendingTeamId);
+      updateHeroStats(leagueData);
+      renderStandings(leagueData.standings);
+
+      closeModal();
+      showToast(`✓ ${name} claimed the team!`);
+    } else {
+      errEl.textContent = '⚠ Submission failed. Please try again.';
+    }
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('modal-backdrop').addEventListener('click', function (e) {
+    if (e.target === this) closeModal();
+  });
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeModal(); closeUnclaimModal(); }
+  });
+
+  // =============================================================
+  //  UNCLAIM MODAL — OPEN / CLOSE / SUBMIT
+  // =============================================================
+
+  function openUnclaimModal(teamId, teamName) {
+    pendingUnclaimTeamId = teamId;
+    document.getElementById('unclaim-team-label').textContent = 'Releasing: ' + teamName;
+    document.getElementById('unclaim-pin').value   = '';
+    document.getElementById('unclaim-error').textContent = '';
+    document.getElementById('unclaim-backdrop').classList.add('open');
+    document.getElementById('unclaim-pin').focus();
+  }
+
+  function closeUnclaimModal() {
+    document.getElementById('unclaim-backdrop').classList.remove('open');
+    pendingUnclaimTeamId = null;
+  }
+
+  function handleUnclaim() {
+    const pin   = document.getElementById('unclaim-pin').value.trim();
+    const errEl = document.getElementById('unclaim-error');
+
+    if (!pin || !/^\d{4}$/.test(pin)) {
+      errEl.textContent = '⚠ Please enter your 4-digit PIN.';
+      return;
+    }
+    if (!pendingUnclaimTeamId) {
+      errEl.textContent = '⚠ No team selected.';
+      return;
+    }
+
+    const storedHash = claimPins[pendingUnclaimTeamId];
+
+    // If no PIN is stored (e.g. claimed before this feature), allow release
+    if (storedHash && storedHash !== simpleHash(pin)) {
+      errEl.textContent = '⚠ Incorrect PIN. Try again.';
+      document.getElementById('unclaim-pin').value = '';
+      document.getElementById('unclaim-pin').focus();
+      return;
+    }
+
+    // Release the team
+    const releasedTeamId = pendingUnclaimTeamId;
+    delete claimedTeams[releasedTeamId];
+    delete claimPins[releasedTeamId];
+    saveClaimedTeams();
+
+    refreshTeamRow(releasedTeamId);
+    updateHeroStats(leagueData);
+    renderStandings(leagueData.standings);
+
+    closeUnclaimModal();
+    showToast('✓ Team released — it\'s available again!');
+  }
+
+  // Close unclaim modal on backdrop click
+  document.getElementById('unclaim-backdrop').addEventListener('click', function (e) {
+    if (e.target === this) closeUnclaimModal();
+  });
+
+  // =============================================================
+  //  PIN HELPER
+  //  ————————————
+  //  A lightweight non-cryptographic hash — good enough for a
+  //  leisure MVP where we just want to deter casual mischief.
+  //  Do not use this for real security-sensitive applications.
+  // =============================================================
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (Math.imul(31, hash) + str.charCodeAt(i)) | 0;
+    }
+    return hash.toString(36);
+  }
+
+  // =============================================================
+  //  TOAST NOTIFICATION
+  // =============================================================
+
+  let toastTimer;
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+  }
+
+  // =============================================================
+  //  HELPER UTILITIES
+  // =============================================================
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // =============================================================
+  //  BOOT — runs on page load
+  // =============================================================
+
+  async function boot() {
+    // 1. Load previously claimed teams + PINs from localStorage
+    claimedTeams = loadClaimedTeamsFromStorage();
+    claimPins    = loadPinsFromStorage();
+
+    // 2. Load league structure (mock or Google Sheets)
+    leagueData = await loadLeagueData();
+
+    // 3. Render conference/division/team grid
+    renderLeague(leagueData);
+
+    // 4. Populate standings filter + render standings
+    populateStandingsFilter();
+    renderStandings(leagueData.standings);
+
+    // 5. Update footer link
+    document.getElementById('footer-sheet-link').href = GOOGLE_SHEETS_CONFIG.SHEET_PUBLIC_URL;
+  }
+
+  boot();
+
+  /*
+    ============================================================
+    WEEKLY UPDATE WORKFLOW
+    ============================================================
+    Each week:
+    1. Open your Google Sheet
+    2. Update the Standings tab with new W/L records
+    3. The dashboard auto-refreshes when users click ↻ Refresh,
+       or you can set a timed reload:
+         setInterval(refreshStandings, 60 * 60 * 1000); // hourly
+    4. No code changes or GitHub push needed for standings updates.
+
+    For structural changes (teams, divisions):
+    1. Update MOCK_LEAGUE above (or your Google Sheet source)
+    2. Commit and push index.html to GitHub
+    3. GitHub Pages serves the update automatically.
+    ============================================================
+  */
+</script>
+</body>
+</html>
