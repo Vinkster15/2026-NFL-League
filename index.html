@@ -659,8 +659,8 @@
   <div class="header-inner">
     <div class="logo">Grid<span>Iron</span> FL</div>
     <nav>
-      <a href="#league">League</a>
       <a href="#signup">Signup</a>
+      <a href="#league">League</a>
       <a href="#standings">Standings</a>
       <a href="#matchups">Matchups</a>
     </nav>
@@ -694,6 +694,24 @@
 </section>
 
 <!-- ============================================================
+     TEAM SIGNUP
+     ============================================================ -->
+<section class="section container" id="signup">
+  <p class="section-title">Anonymous Signup</p>
+  <h2 class="block-heading">Claim a Team</h2>
+  <p style="color:var(--text-dim);font-size:15px;max-width:560px;margin-bottom:24px">
+    Click <strong style="color:var(--accent)">Claim</strong> next to any available team below.
+    Your identity is never displayed publicly — only your chosen display name is shown on your team card.
+  </p>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;max-width:460px;font-family:var(--font-mono);font-size:12px;color:var(--muted);line-height:1.8">
+    🔒 <strong style="color:var(--text-dim)">Privacy note:</strong> Email addresses are stored privately
+    in Google Sheets and never shown in this dashboard. Claim data is only visible to the commissioner.
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================================================
      LEAGUE OVERVIEW  (conferences + divisions + teams)
      ============================================================ -->
 <section class="section container" id="league">
@@ -702,24 +720,6 @@
   <div class="conf-grid" id="conference-grid">
     <!-- Populated by JS -->
     <p style="color:var(--muted);font-family:var(--font-mono);font-size:13px">Loading league data…</p>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ============================================================
-     TEAM SIGNUP
-     ============================================================ -->
-<section class="section container" id="signup">
-  <p class="section-title">Anonymous Signup</p>
-  <h2 class="block-heading">Claim a Team</h2>
-  <p style="color:var(--text-dim);font-size:15px;max-width:560px;margin-bottom:24px">
-    Click <strong style="color:var(--accent)">Claim</strong> next to any available team above.
-    Your identity is never displayed publicly — only your chosen display name is shown on your team card.
-  </p>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;max-width:460px;font-family:var(--font-mono);font-size:12px;color:var(--muted);line-height:1.8">
-    🔒 <strong style="color:var(--text-dim)">Privacy note:</strong> Email addresses (optional) are stored privately
-    in Google Sheets and never shown in this dashboard. Claim data is only visible to the commissioner.
   </div>
 </section>
 
@@ -789,7 +789,7 @@
     <label for="input-name">Display Name *</label>
     <input id="input-name" type="text" placeholder="Your name or alias" maxlength="32" autocomplete="off" />
 
-    <label for="input-email">Email <span style="font-size:10px;color:var(--muted)">(optional · private)</span></label>
+    <label for="input-email">Email * <span style="font-size:10px;color:var(--muted)">(private · never shown publicly)</span></label>
     <input id="input-email" type="email" placeholder="you@example.com" autocomplete="off" />
 
     <label for="input-pin">
@@ -1406,7 +1406,11 @@
       errEl.textContent = '⚠ Display name is required.';
       return;
     }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email) {
+      errEl.textContent = '⚠ Email is required.';
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errEl.textContent = '⚠ Please enter a valid email address.';
       return;
     }
