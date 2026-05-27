@@ -1230,7 +1230,7 @@
     row.dataset.teamId = team.id;
 
     const displayName = isClaimed
-      ? `${team.name} <span style="color:var(--accent);font-size:12px">[${escHtml(claimedTeams[team.id])}]</span>`
+      ? `${team.name}${allTeamsClaimed() ? ` <span style="color:var(--accent);font-size:12px">[${escHtml(claimedTeams[team.id])}]</span>` : ''}`
       : team.name;
 
     row.innerHTML = `
@@ -1266,12 +1266,26 @@
     existing.replaceWith(newRow);
   }
 
+  // Returns true only when all 32 teams are claimed — names stay hidden until then
+  function allTeamsClaimed() {
+    if (!leagueData) return false;
+    return Object.keys(window._claimedTeams || claimedTeams).length >= leagueData.teams.length;
+  }
+
   function updateHeroStats(data) {
-    const total = data.teams.length;
+    const total   = data.teams.length;
     const claimed = Object.keys(claimedTeams).length;
     document.getElementById('stat-total').textContent     = total;
     document.getElementById('stat-available').textContent = total - claimed;
     document.getElementById('stat-claimed').textContent   = claimed;
+
+    // Show/hide the anonymous mode notice
+    const sub = document.getElementById('hero-sub');
+    if (sub) {
+      sub.textContent = claimed >= total
+        ? 'Season 1 · All teams claimed · identities revealed!'
+        : `Season 1 · Claim your team · Identities hidden until all ${total} teams are claimed`;
+    }
   }
 
   // =============================================================
@@ -1298,7 +1312,7 @@
         const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
         const played = s.wins + s.losses;
         const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
-        const displayName = claimedTeams[team.id]
+        const displayName = (claimedTeams[team.id] && allTeamsClaimed())
           ? `${team.name} <span style="color:var(--accent);font-size:11px">[${escHtml(claimedTeams[team.id])}]</span>`
           : team.name;
         return { ...s, pct, displayName, wins: s.wins, losses: s.losses };
@@ -1660,8 +1674,9 @@
   }
 
   // Find the display name (player) who claimed a given team name
+  // Returns null until all 32 teams are claimed (names stay anonymous until then)
   function getPlayerForTeam(teamName) {
-    if (!leagueData) return null;
+    if (!leagueData || !allTeamsClaimed()) return null;
     const team = leagueData.teams.find(t => t.name === teamName);
     if (!team) return null;
     return claimedTeams[team.id] || null;
