@@ -787,8 +787,11 @@
     <h3 id="modal-title">Claim Team</h3>
     <p class="modal-sub" id="modal-team-label">— Select a team —</p>
 
-    <label for="input-name">Display Name *</label>
-    <input id="input-name" type="text" placeholder="Your name or alias" maxlength="32" autocomplete="off" />
+    <label for="input-name">Name *</label>
+    <input id="input-name" type="text" placeholder="Your full name" maxlength="32" autocomplete="off" />
+
+    <label for="input-dk">DraftKings Username *</label>
+    <input id="input-dk" type="text" placeholder="Your DraftKings username" maxlength="32" autocomplete="off" />
 
     <label for="input-email">Email * <span style="font-size:10px;color:var(--muted)">(private · never shown publicly)</span></label>
     <input id="input-email" type="email" placeholder="you@example.com" autocomplete="off" />
@@ -807,8 +810,8 @@
     />
 
     <p class="privacy-note">
-      Your email and PIN are stored locally in your browser. The PIN is never shown publicly —
-      it only lets <em>you</em> release this team if you change your mind.
+      Your name and email are private and never shown publicly. Your DraftKings username
+      will appear in the standings. Your PIN lets you release your team if needed.
     </p>
 
     <p id="modal-error"></p>
@@ -1017,8 +1020,9 @@
   //  In production this would be fetched from Google Sheets.
   // =============================================================
   let leagueData   = null; // populated by loadLeagueData()
-  let claimedTeams = {};   // { teamId → displayName }  — from localStorage + Google Sheets
+  let claimedTeams = {};   // { teamId → name }         — from localStorage + Google Sheets
   let claimPins    = {};   // { teamId → hashedPIN }    — stored only in localStorage (never sent publicly)
+  window._claimUsernames = {}; // { teamId → draftKingsUsername } — from localStorage + Google Sheets
 
   // Which team is currently being claimed / unclaimed (used by modals)
   let pendingTeamId        = null;
@@ -1063,19 +1067,21 @@
       const data = await res.json();
 
       if (data.success) {
-        claimedTeams = data.claims || {};
+        claimedTeams           = data.claims    || {};
+        window._claimUsernames = data.usernames || {};
         // PINs are never returned from the server — keep local copy for UX only.
-        // The server verifies the hash on release; the client copy is just a hint.
         claimPins = loadPinsFromStorage();
       } else {
         console.warn('loadClaims: server error —', data.error);
-        claimedTeams = loadClaimedTeamsFromStorage();
-        claimPins    = loadPinsFromStorage();
+        claimedTeams           = loadClaimedTeamsFromStorage();
+        claimPins              = loadPinsFromStorage();
+        window._claimUsernames = loadUsernamesFromStorage();
       }
     } catch (err) {
       console.warn('loadClaims: fetch failed, using localStorage fallback', err);
-      claimedTeams = loadClaimedTeamsFromStorage();
-      claimPins    = loadPinsFromStorage();
+      claimedTeams           = loadClaimedTeamsFromStorage();
+      claimPins              = loadPinsFromStorage();
+      window._claimUsernames = loadUsernamesFromStorage();
     }
   }
 
@@ -1110,14 +1116,14 @@
    * Claims sheet so all users see it immediately.
    * Falls back to localStorage-only mode when not configured.
    */
-  async function submitClaim(teamId, displayName, email, hashedPin) {
+  async function submitClaim(teamId, name, draftKingsUsername, email, hashedPin) {
     if (!isLive()) {
       await new Promise(r => setTimeout(r, 400));
       return true;
     }
 
     try {
-      const params = new URLSearchParams({ action: 'claim', teamId, displayName, email: email || '', hashedPin });
+      const params = new URLSearchParams({ action: 'claim', teamId, name, draftKingsUsername, email, hashedPin });
       const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?' + params);
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Claim failed');
@@ -1164,8 +1170,9 @@
 
   function saveClaimedTeams() {
     try {
-      localStorage.setItem('gfl_claimed', JSON.stringify(claimedTeams));
-      localStorage.setItem('gfl_pins',    JSON.stringify(claimPins));
+      localStorage.setItem('gfl_claimed',   JSON.stringify(claimedTeams));
+      localStorage.setItem('gfl_pins',      JSON.stringify(claimPins));
+      localStorage.setItem('gfl_usernames', JSON.stringify(window._claimUsernames));
     }
     catch (e) { /* localStorage unavailable */ }
   }
@@ -1180,6 +1187,13 @@
   function loadPinsFromStorage() {
     try {
       const raw = localStorage.getItem('gfl_pins');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function loadUsernamesFromStorage() {
+    try {
+      const raw = localStorage.getItem('gfl_usernames');
       return raw ? JSON.parse(raw) : {};
     } catch (e) { return {}; }
   }
@@ -1343,8 +1357,9 @@
         const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
         const played = s.wins + s.losses;
         const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
-        const displayName = (claimedTeams[team.id] && allTeamsClaimed())
-          ? `${team.name} <span style="color:var(--accent);font-size:11px">[${escHtml(claimedTeams[team.id])}]</span>`
+        const dk = window._claimUsernames && window._claimUsernames[team.id];
+        const displayName = dk
+          ? `${team.name} <span style="color:var(--accent);font-size:11px">[${escHtml(dk)}]</span>`
           : team.name;
         return { ...s, pct, displayName, wins: s.wins, losses: s.losses };
       }).sort((a, b) => b.wins - a.wins || a.losses - b.losses);
@@ -1414,6 +1429,7 @@
     pendingTeamId = teamId;
     document.getElementById('modal-team-label').textContent = 'Claiming: ' + teamName;
     document.getElementById('input-name').value  = '';
+    document.getElementById('input-dk').value    = '';
     document.getElementById('input-email').value = '';
     document.getElementById('input-pin').value   = '';
     document.getElementById('modal-error').textContent = '';
@@ -1428,13 +1444,18 @@
 
   async function handleSubmit() {
     const name  = document.getElementById('input-name').value.trim();
+    const dk    = document.getElementById('input-dk').value.trim();
     const email = document.getElementById('input-email').value.trim();
     const pin   = document.getElementById('input-pin').value.trim();
     const errEl = document.getElementById('modal-error');
 
     // Basic validation
     if (!name) {
-      errEl.textContent = '⚠ Display name is required.';
+      errEl.textContent = '⚠ Name is required.';
+      return;
+    }
+    if (!dk) {
+      errEl.textContent = '⚠ DraftKings Username is required.';
       return;
     }
     if (!email) {
@@ -1466,15 +1487,16 @@
     submitBtn.textContent = 'Submitting…';
 
     const hashed = simpleHash(pin);
-    const ok = await submitClaim(pendingTeamId, name, email, hashed);
+    const ok = await submitClaim(pendingTeamId, name, dk, email, hashed);
 
     submitBtn.disabled = false;
     submitBtn.textContent = 'Claim Team';
 
     if (ok) {
       // Mirror in local state so the UI updates instantly
-      claimedTeams[pendingTeamId] = name;
-      claimPins[pendingTeamId]    = hashed;
+      claimedTeams[pendingTeamId]          = name;
+      claimPins[pendingTeamId]             = hashed;
+      window._claimUsernames[pendingTeamId] = dk;
       saveClaimedTeams();
 
       // Update UI without full re-render
