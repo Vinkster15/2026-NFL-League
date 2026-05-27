@@ -756,7 +756,7 @@
   <h2 class="block-heading">Weekly Matchups</h2>
 
   <div class="matchups-controls">
-    <select id="matchups-week-filter">
+    <select id="matchups-week-filter" onchange="renderMatchups()">
       <option value="">Loading…</option>
     </select>
     <button class="btn-refresh" onclick="refreshMatchups()">↻ Refresh</button>
@@ -1586,8 +1586,8 @@
     }
   }
 
-  function populateWeekFilter(matchups) {
-    const weeks = [...new Set(matchups.map(m => m.week))].sort((a, b) => a - b);
+  function populateWeekFilter(keepWeek) {
+    const weeks = [...new Set(allMatchups.map(m => Number(m.week)))].sort((a, b) => a - b);
     const sel   = document.getElementById('matchups-week-filter');
     sel.innerHTML = '';
 
@@ -1597,36 +1597,31 @@
     }
 
     weeks.forEach(w => {
-      const opt = document.createElement('option');
-      opt.value = w;
+      const opt       = document.createElement('option');
+      opt.value       = w;
       opt.textContent = 'Week ' + w;
       sel.appendChild(opt);
     });
 
-    // Default to the latest week
-    sel.value = weeks[weeks.length - 1];
-    sel.addEventListener('change', () => renderMatchups(allMatchups));
+    // Restore previously selected week, or default to the latest
+    sel.value = (keepWeek && weeks.includes(Number(keepWeek))) ? keepWeek : weeks[weeks.length - 1];
   }
 
-  function renderMatchups(matchups) {
+  function renderMatchups() {
+    const sel     = document.getElementById('matchups-week-filter');
+    const selWeek = Number(sel.value);
     const grid    = document.getElementById('matchups-grid');
     const empty   = document.getElementById('matchups-empty');
-    const selWeek = parseInt(document.getElementById('matchups-week-filter').value, 10);
-    const week    = matchups.filter(m => Number(m.week) === selWeek);
+    const week    = allMatchups.filter(m => Number(m.week) === selWeek);
 
-    grid.innerHTML = '';
-    empty.style.display = 'none';
-
-    if (week.length === 0) {
-      empty.style.display = 'block';
-      grid.appendChild(empty);
-      return;
-    }
+    // Clear previous cards (but not the empty message element)
+    Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
+    empty.style.display = week.length === 0 ? 'block' : 'none';
 
     week.forEach((m, i) => {
-      const played    = m.homeScore !== null && m.awayScore !== null;
-      const homeWins  = played && m.homeScore > m.awayScore;
-      const awayWins  = played && m.awayScore > m.homeScore;
+      const played     = m.homeScore !== null && m.awayScore !== null;
+      const homeWins   = played && m.homeScore > m.awayScore;
+      const awayWins   = played && m.awayScore > m.homeScore;
       const homePlayer = getPlayerForTeam(m.homeTeam);
       const awayPlayer = getPlayerForTeam(m.awayTeam);
 
@@ -1641,7 +1636,6 @@
             </div>
             ${homePlayer ? `<div class="matchup-player">${escHtml(homePlayer)}</div>` : ''}
           </div>
-
           <div class="matchup-score-wrap">
             ${played
               ? `<div class="matchup-score-nums">
@@ -1653,7 +1647,6 @@
               : `<div class="matchup-score upcoming">VS</div>`
             }
           </div>
-
           <div class="matchup-team">
             <div class="matchup-team-name ${played ? (awayWins ? 'winner' : 'loser') : ''}">
               ${escHtml(m.awayTeam)}
@@ -1675,15 +1668,10 @@
   }
 
   async function refreshMatchups() {
-    const currentWeek = document.getElementById('matchups-week-filter').value;
-    allMatchups = await loadMatchups();
-    populateWeekFilter(allMatchups);
-    // Restore the previously selected week if it still exists
-    const sel = document.getElementById('matchups-week-filter');
-    if (currentWeek && [...sel.options].some(o => o.value === currentWeek)) {
-      sel.value = currentWeek;
-    }
-    renderMatchups(allMatchups);
+    const prevWeek = document.getElementById('matchups-week-filter').value;
+    allMatchups    = await loadMatchups();
+    populateWeekFilter(prevWeek);
+    renderMatchups();
   }
 
   // =============================================================
@@ -1711,8 +1699,8 @@
 
     // 6. Load and render matchups
     allMatchups = await loadMatchups();
-    populateWeekFilter(allMatchups);
-    renderMatchups(allMatchups);
+    populateWeekFilter();
+    renderMatchups();
 
     // 7. Update footer link
     document.getElementById('footer-sheet-link').href = GOOGLE_SHEETS_CONFIG.SHEET_PUBLIC_URL;
