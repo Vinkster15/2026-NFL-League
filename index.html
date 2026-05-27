@@ -775,6 +775,7 @@
   <p style="margin-top:6px">
     Data source: <a href="#" id="footer-sheet-link" target="_blank">Google Sheets</a>
     &nbsp;·&nbsp; Built with plain HTML / CSS / JS
+    &nbsp;·&nbsp; <a href="#" onclick="activateCommissioner(); return false;" style="color:var(--border);text-decoration:none">⚙</a>
   </p>
 </footer>
 
@@ -1238,18 +1239,20 @@
       <span class="badge ${isClaimed ? 'badge-claimed' : 'badge-available'}">
         ${isClaimed ? 'Claimed' : 'Available'}
       </span>
-      ${isClaimed
+      ${isClaimed && (claimPins[team.id] || window._commissionerActive)
         ? `<button
              class="btn-unclaim"
              title="Release this team"
              onclick="openUnclaimModal('${team.id}', '${escHtml(team.name)}')"
            >✕ Release</button>`
-        : `<button
+        : !isClaimed
+        ? `<button
              class="btn-claim"
              data-team-id="${team.id}"
              data-team-name="${escHtml(team.name)}"
              onclick="openModal('${team.id}', '${escHtml(team.name)}')"
            >Claim</button>`
+        : ''
       }
     `;
 
@@ -1264,6 +1267,27 @@
     if (!team) return;
     const newRow = buildTeamRow(team);
     existing.replaceWith(newRow);
+  }
+
+  // =============================================================
+  //  COMMISSIONER MODE
+  //  ————————————————
+  //  Activated via the hidden footer link. Allows releasing any
+  //  team regardless of which browser claimed it.
+  // =============================================================
+  window._commissionerActive = false;
+  const COMMISSIONER_HASH = 'vp19'; // simpleHash('0162')
+
+  function activateCommissioner() {
+    const pin = prompt('Enter commissioner PIN:');
+    if (!pin) return;
+    if (simpleHash(pin) === COMMISSIONER_HASH) {
+      window._commissionerActive = true;
+      renderLeague(leagueData);
+      showToast('Commissioner mode active — all Release buttons visible');
+    } else {
+      alert('Incorrect PIN.');
+    }
   }
 
   // Returns true only when all 32 teams are claimed — names stay hidden until then
