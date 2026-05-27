@@ -835,15 +835,17 @@
       this team. This releases the team so someone else can claim it.
     </p>
 
-    <label for="unclaim-pin">PIN *</label>
-    <input
-      id="unclaim-pin"
-      type="password"
-      inputmode="numeric"
-      maxlength="4"
-      placeholder="••••"
-      autocomplete="off"
-    />
+    <div id="unclaim-pin-wrap">
+      <label for="unclaim-pin">PIN *</label>
+      <input
+        id="unclaim-pin"
+        type="password"
+        inputmode="numeric"
+        maxlength="4"
+        placeholder="••••"
+        autocomplete="off"
+      />
+    </div>
 
     <p id="unclaim-error" style="font-size:12px;color:var(--red);font-family:var(--font-mono);min-height:16px;margin-bottom:12px;"></p>
 
@@ -1136,7 +1138,12 @@
     if (!isLive()) return true;
 
     try {
-      const params = new URLSearchParams({ action: 'release', teamId, hashedPin });
+      const params = new URLSearchParams({
+        action: 'release',
+        teamId,
+        hashedPin,
+        commissioner: window._commissionerActive ? COMMISSIONER_HASH : '',
+      });
       const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?' + params);
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Release failed');
@@ -1501,8 +1508,13 @@
     document.getElementById('unclaim-team-label').textContent = 'Releasing: ' + teamName;
     document.getElementById('unclaim-pin').value   = '';
     document.getElementById('unclaim-error').textContent = '';
+
+    // Hide PIN field for commissioner — they don't need it
+    const pinWrap = document.getElementById('unclaim-pin-wrap');
+    if (pinWrap) pinWrap.style.display = window._commissionerActive ? 'none' : 'block';
+
     document.getElementById('unclaim-backdrop').classList.add('open');
-    document.getElementById('unclaim-pin').focus();
+    if (!window._commissionerActive) document.getElementById('unclaim-pin').focus();
   }
 
   function closeUnclaimModal() {
@@ -1526,12 +1538,14 @@
     const hashed     = simpleHash(pin);
     const storedHash = claimPins[pendingUnclaimTeamId];
 
-    // Offline mode: verify PIN locally before attempting server release
-    if (!isLive() && storedHash && storedHash !== hashed) {
-      errEl.textContent = '⚠ Incorrect PIN. Try again.';
-      document.getElementById('unclaim-pin').value = '';
-      document.getElementById('unclaim-pin').focus();
-      return;
+    // Commissioner bypasses PIN verification entirely
+    if (!window._commissionerActive) {
+      if (!isLive() && storedHash && storedHash !== hashed) {
+        errEl.textContent = '⚠ Incorrect PIN. Try again.';
+        document.getElementById('unclaim-pin').value = '';
+        document.getElementById('unclaim-pin').focus();
+        return;
+      }
     }
 
     // Disable button while in-flight
