@@ -1612,7 +1612,7 @@
     const grid    = document.getElementById('matchups-grid');
     const empty   = document.getElementById('matchups-empty');
     const selWeek = parseInt(document.getElementById('matchups-week-filter').value, 10);
-    const week    = matchups.filter(m => m.week === selWeek);
+    const week    = matchups.filter(m => Number(m.week) === selWeek);
 
     grid.innerHTML = '';
     empty.style.display = 'none';
@@ -1675,7 +1675,14 @@
   }
 
   async function refreshMatchups() {
+    const currentWeek = document.getElementById('matchups-week-filter').value;
     allMatchups = await loadMatchups();
+    populateWeekFilter(allMatchups);
+    // Restore the previously selected week if it still exists
+    const sel = document.getElementById('matchups-week-filter');
+    if (currentWeek && [...sel.options].some(o => o.value === currentWeek)) {
+      sel.value = currentWeek;
+    }
     renderMatchups(allMatchups);
   }
 
