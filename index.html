@@ -491,6 +491,125 @@
     }
     .win-pct { color: var(--accent); }
 
+    /* ---- Matchups ---- */
+    .matchups-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .matchups-controls select {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      padding: 7px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      outline: none;
+    }
+    .matchups-controls select:focus { border-color: var(--accent); }
+    .matchups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .matchup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .matchup-card-header {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 7px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+    }
+    .matchup-body {
+      padding: 16px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .matchup-team {
+      flex: 1;
+      text-align: center;
+    }
+    .matchup-team-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .matchup-team-name.winner { color: var(--green); }
+    .matchup-team-name.loser  { color: var(--muted); }
+    .matchup-player {
+      font-size: 11px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      margin-top: 3px;
+    }
+    .matchup-score {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--heading);
+      font-family: var(--font-mono);
+      text-align: center;
+      min-width: 60px;
+      line-height: 1;
+    }
+    .matchup-score.upcoming {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .matchup-score-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 70px;
+    }
+    .matchup-score-nums {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--heading);
+    }
+    .matchup-score-sep {
+      font-size: 18px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .matchup-final-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    #matchups-empty {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+      padding: 20px 0;
+    }
+
     /* ---- Toast ---- */
     #toast {
       position: fixed;
@@ -543,6 +662,7 @@
       <a href="#league">League</a>
       <a href="#signup">Signup</a>
       <a href="#standings">Standings</a>
+      <a href="#matchups">Matchups</a>
     </nav>
   </div>
 </header>
@@ -623,6 +743,27 @@
 
   <div class="standings-grid" id="standings-grid">
     <!-- Populated by JS -->
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================================================
+     MATCHUPS
+     ============================================================ -->
+<section class="section container" id="matchups">
+  <p class="section-title">Schedule</p>
+  <h2 class="block-heading">Weekly Matchups</h2>
+
+  <div class="matchups-controls">
+    <select id="matchups-week-filter">
+      <option value="">Loading…</option>
+    </select>
+    <button class="btn-refresh" onclick="refreshMatchups()">↻ Refresh</button>
+  </div>
+
+  <div class="matchups-grid" id="matchups-grid">
+    <p id="matchups-empty" style="display:none">No matchups found for this week.</p>
   </div>
 </section>
 
@@ -1428,6 +1569,117 @@
   }
 
   // =============================================================
+  //  MATCHUPS
+  // =============================================================
+
+  let allMatchups = [];
+
+  async function loadMatchups() {
+    if (!isLive()) return [];
+    try {
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=matchups');
+      const data = await res.json();
+      return (data.success && data.matchups) ? data.matchups : [];
+    } catch (err) {
+      console.warn('loadMatchups: fetch failed', err);
+      return [];
+    }
+  }
+
+  function populateWeekFilter(matchups) {
+    const weeks = [...new Set(matchups.map(m => m.week))].sort((a, b) => a - b);
+    const sel   = document.getElementById('matchups-week-filter');
+    sel.innerHTML = '';
+
+    if (weeks.length === 0) {
+      sel.innerHTML = '<option value="">No matchups yet</option>';
+      return;
+    }
+
+    weeks.forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w;
+      opt.textContent = 'Week ' + w;
+      sel.appendChild(opt);
+    });
+
+    // Default to the latest week
+    sel.value = weeks[weeks.length - 1];
+    sel.addEventListener('change', () => renderMatchups(allMatchups));
+  }
+
+  function renderMatchups(matchups) {
+    const grid    = document.getElementById('matchups-grid');
+    const empty   = document.getElementById('matchups-empty');
+    const selWeek = parseInt(document.getElementById('matchups-week-filter').value, 10);
+    const week    = matchups.filter(m => m.week === selWeek);
+
+    grid.innerHTML = '';
+    empty.style.display = 'none';
+
+    if (week.length === 0) {
+      empty.style.display = 'block';
+      grid.appendChild(empty);
+      return;
+    }
+
+    week.forEach((m, i) => {
+      const played    = m.homeScore !== null && m.awayScore !== null;
+      const homeWins  = played && m.homeScore > m.awayScore;
+      const awayWins  = played && m.awayScore > m.homeScore;
+      const homePlayer = getPlayerForTeam(m.homeTeam);
+      const awayPlayer = getPlayerForTeam(m.awayTeam);
+
+      const card = document.createElement('div');
+      card.className = 'matchup-card';
+      card.innerHTML = `
+        <div class="matchup-card-header">Week ${m.week} · Game ${i + 1}</div>
+        <div class="matchup-body">
+          <div class="matchup-team">
+            <div class="matchup-team-name ${played ? (homeWins ? 'winner' : 'loser') : ''}">
+              ${escHtml(m.homeTeam)}
+            </div>
+            ${homePlayer ? `<div class="matchup-player">${escHtml(homePlayer)}</div>` : ''}
+          </div>
+
+          <div class="matchup-score-wrap">
+            ${played
+              ? `<div class="matchup-score-nums">
+                   <span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span>
+                   <span class="matchup-score-sep">–</span>
+                   <span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span>
+                 </div>
+                 <div class="matchup-final-label">Final</div>`
+              : `<div class="matchup-score upcoming">VS</div>`
+            }
+          </div>
+
+          <div class="matchup-team">
+            <div class="matchup-team-name ${played ? (awayWins ? 'winner' : 'loser') : ''}">
+              ${escHtml(m.awayTeam)}
+            </div>
+            ${awayPlayer ? `<div class="matchup-player">${escHtml(awayPlayer)}</div>` : ''}
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Find the display name (player) who claimed a given team name
+  function getPlayerForTeam(teamName) {
+    if (!leagueData) return null;
+    const team = leagueData.teams.find(t => t.name === teamName);
+    if (!team) return null;
+    return claimedTeams[team.id] || null;
+  }
+
+  async function refreshMatchups() {
+    allMatchups = await loadMatchups();
+    renderMatchups(allMatchups);
+  }
+
+  // =============================================================
   //  BOOT — runs on page load
   // =============================================================
 
@@ -1450,7 +1702,12 @@
     populateStandingsFilter();
     renderStandings(leagueData.standings);
 
-    // 6. Update footer link
+    // 6. Load and render matchups
+    allMatchups = await loadMatchups();
+    populateWeekFilter(allMatchups);
+    renderMatchups(allMatchups);
+
+    // 7. Update footer link
     document.getElementById('footer-sheet-link').href = GOOGLE_SHEETS_CONFIG.SHEET_PUBLIC_URL;
 
     // 7. Show a subtle indicator if running in offline/local mode
