@@ -1572,7 +1572,7 @@
   //  MATCHUPS
   // =============================================================
 
-  let allMatchups = [];
+  window._matchups = [];
 
   async function loadMatchups() {
     if (!isLive()) return [];
@@ -1587,7 +1587,7 @@
   }
 
   function populateWeekFilter(keepWeek) {
-    const weeks = [...new Set(allMatchups.map(m => Number(m.week)))].sort((a, b) => a - b);
+    const weeks = [...new Set(window._matchups.map(m => Number(m.week)))].sort((a, b) => a - b);
     const sel   = document.getElementById('matchups-week-filter');
     sel.innerHTML = '';
 
@@ -1612,7 +1612,7 @@
     const selWeek = Number(sel.value);
     const grid    = document.getElementById('matchups-grid');
     const empty   = document.getElementById('matchups-empty');
-    const week    = allMatchups.filter(m => Number(m.week) === selWeek);
+    const week    = window._matchups.filter(m => Number(m.week) === selWeek);
 
     // Clear previous cards (but not the empty message element)
     Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
@@ -1669,7 +1669,7 @@
 
   async function refreshMatchups() {
     const prevWeek = document.getElementById('matchups-week-filter').value;
-    allMatchups    = await loadMatchups();
+    window._matchups    = await loadMatchups();
     populateWeekFilter(prevWeek);
     renderMatchups();
   }
@@ -1698,7 +1698,7 @@
     renderStandings(leagueData.standings);
 
     // 6. Load and render matchups
-    allMatchups = await loadMatchups();
+    window._matchups = await loadMatchups();
     populateWeekFilter();
     renderMatchups();
 
