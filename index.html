@@ -1357,7 +1357,7 @@
         const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
         const played = s.wins + s.losses;
         const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
-        const dk = window._claimUsernames && window._claimUsernames[team.id];
+        const dk = allTeamsClaimed() && window._claimUsernames && window._claimUsernames[team.id];
         const displayName = dk
           ? `${team.name} <span style="color:var(--accent);font-size:11px">[${escHtml(dk)}]</span>`
           : team.name;
