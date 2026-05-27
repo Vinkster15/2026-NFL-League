@@ -751,7 +751,7 @@
     // ─── Paste your deployed Apps Script Web App URL here ───────────────────────
     // After deploying (see apps-script.gs setup instructions), replace this URL.
     // The same URL handles claims, releases, and standings — all via action param.
-    APPS_SCRIPT_URL:  'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
+    APPS_SCRIPT_URL:  'https://script.google.com/macros/s/AKfycbwyH3OWsW_pqlVC3aMKUJusr3BeFYT4Cd3fP_gQL4lA_OzF9FhSadMtNM0P55qZ0OUikw/exec',
 
     // Link shown in footer (optional — your Google Sheet's shareable URL)
     SHEET_PUBLIC_URL: 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit',
@@ -881,97 +881,128 @@
   let pendingUnclaimTeamId = null;
 
   // =============================================================
-  //  GOOGLE SHEETS INTEGRATION HOOKS
-  //  ————————————————————————————————
-  //  These three functions are the only ones you need to update
-  //  when connecting real Google Sheets data. The rest of the
-  //  app just reads from `leagueData` and `claimedTeams`.
+  //  GOOGLE SHEETS INTEGRATION
+  //  ——————————————————————————
+  //  All reads and writes go through the single Apps Script URL.
+  //  When APPS_SCRIPT_URL still contains 'YOUR_SCRIPT_ID', the
+  //  app runs in offline/localStorage-only mode automatically.
   // =============================================================
 
   /**
    * loadLeagueData()
    * ----------------
-   * Fetches league structure (conferences, divisions, teams) from
-   * Google Sheets CSV/JSON. Falls back to MOCK_LEAGUE for the MVP.
-   *
-   * TO CONNECT REAL DATA:
-   * 1. Publish your Google Sheet as CSV (File → Share → Publish to web)
-   * 2. Replace the fetch URL with GOOGLE_SHEETS_CONFIG.LEAGUE_DATA_URL
-   * 3. Parse the CSV rows into the same { conferences, divisions, teams } shape
+   * League structure (conferences, divisions, teams) is static — it lives
+   * in MOCK_LEAGUE below and never needs to be fetched. Only standings
+   * and claims are dynamic.
    */
   async function loadLeagueData() {
-    // ---- MVP: use mock data directly ----
-    // LIVE: uncomment the fetch block below and remove the mock return
-
-    // try {
-    //   const res = await fetch(GOOGLE_SHEETS_CONFIG.LEAGUE_DATA_URL);
-    //   const csv = await res.text();
-    //   return parseLeagueCSV(csv);   // you'll write this parser
-    // } catch (err) {
-    //   console.warn('loadLeagueData: falling back to mock data', err);
-    // }
-
     return MOCK_LEAGUE;
+  }
+
+  /**
+   * loadClaims()
+   * ------------
+   * Fetches which teams are currently claimed from Google Sheets.
+   * Populates `claimedTeams` so every user sees the same state.
+   * Falls back to localStorage when offline or not yet configured.
+   */
+  async function loadClaims() {
+    if (!isLive()) {
+      // Offline mode — use whatever is in localStorage
+      claimedTeams = loadClaimedTeamsFromStorage();
+      claimPins    = loadPinsFromStorage();
+      return;
+    }
+
+    try {
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=claims');
+      const data = await res.json();
+
+      if (data.success) {
+        claimedTeams = data.claims || {};
+        // PINs are never returned from the server — keep local copy for UX only.
+        // The server verifies the hash on release; the client copy is just a hint.
+        claimPins = loadPinsFromStorage();
+      } else {
+        console.warn('loadClaims: server error —', data.error);
+        claimedTeams = loadClaimedTeamsFromStorage();
+        claimPins    = loadPinsFromStorage();
+      }
+    } catch (err) {
+      console.warn('loadClaims: fetch failed, using localStorage fallback', err);
+      claimedTeams = loadClaimedTeamsFromStorage();
+      claimPins    = loadPinsFromStorage();
+    }
   }
 
   /**
    * loadStandings()
    * ---------------
-   * Fetches current win/loss records from Google Sheets.
-   * Returns an array of { teamId, wins, losses }.
-   *
-   * TO CONNECT REAL DATA:
-   * 1. Publish your standings sheet tab as CSV
-   * 2. Replace the fetch URL with GOOGLE_SHEETS_CONFIG.STANDINGS_URL
-   * 3. Parse CSV rows → { teamId, wins, losses } objects
+   * Fetches current W/L records from the Standings sheet tab.
+   * Falls back to the mock data when not configured.
    */
   async function loadStandings() {
-    // ---- MVP: use mock standings ----
-    // LIVE: uncomment the fetch block below
+    if (!isLive()) return MOCK_LEAGUE.standings;
 
-    // try {
-    //   const res = await fetch(GOOGLE_SHEETS_CONFIG.STANDINGS_URL);
-    //   const csv = await res.text();
-    //   return parseStandingsCSV(csv);
-    // } catch (err) {
-    //   console.warn('loadStandings: falling back to mock data', err);
-    // }
+    try {
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=standings');
+      const data = await res.json();
+
+      if (data.success && data.standings && data.standings.length > 0) {
+        return data.standings;
+      }
+      console.warn('loadStandings: empty or error response, using mock data');
+    } catch (err) {
+      console.warn('loadStandings: fetch failed, using mock data', err);
+    }
 
     return MOCK_LEAGUE.standings;
   }
 
   /**
-   * submitClaim(teamId, displayName, email)
-   * ----------------------------------------
-   * Sends a signup claim to your Google Apps Script Web App.
-   * Returns true on success, false on failure.
-   *
-   * TO CONNECT REAL DATA:
-   * 1. Deploy an Apps Script Web App (doPost) that appends a row
-   * 2. Replace the fetch URL with GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL
-   * 3. Remove the mock setTimeout below
+   * submitClaim(teamId, displayName, email, hashedPin)
+   * ---------------------------------------------------
+   * Posts a claim to the Apps Script Web App, which writes it to the
+   * Claims sheet so all users see it immediately.
+   * Falls back to localStorage-only mode when not configured.
    */
-  async function submitClaim(teamId, displayName, email) {
-    // ---- MVP: simulate async submission ----
-    // LIVE: uncomment the fetch block below
+  async function submitClaim(teamId, displayName, email, hashedPin) {
+    if (!isLive()) {
+      await new Promise(r => setTimeout(r, 400));
+      return true;
+    }
 
-    // try {
-    //   const res = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL, {
-    //     method: 'POST',
-    //     body: JSON.stringify({ teamId, displayName, email, timestamp: new Date().toISOString() }),
-    //     headers: { 'Content-Type': 'application/json' }
-    //   });
-    //   const data = await res.json();
-    //   if (!data.success) throw new Error(data.message || 'Submission failed');
-    //   return true;
-    // } catch (err) {
-    //   console.error('submitClaim error:', err);
-    //   return false;
-    // }
+    try {
+      const params = new URLSearchParams({ action: 'claim', teamId, displayName, email: email || '', hashedPin });
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?' + params);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Claim failed');
+      return true;
+    } catch (err) {
+      console.error('submitClaim error:', err);
+      return false;
+    }
+  }
 
-    // Mock: always succeed after a short delay
-    await new Promise(r => setTimeout(r, 600));
-    return true;
+  /**
+   * submitRelease(teamId, hashedPin)
+   * --------------------------------
+   * Asks the Apps Script to delete the claim row after verifying the PIN.
+   * Falls back to localStorage-only mode when not configured.
+   */
+  async function submitRelease(teamId, hashedPin) {
+    if (!isLive()) return true;
+
+    try {
+      const params = new URLSearchParams({ action: 'release', teamId, hashedPin });
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?' + params);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Release failed');
+      return true;
+    } catch (err) {
+      console.error('submitRelease error:', err);
+      return false;
+    }
   }
 
   // =============================================================
@@ -1167,6 +1198,8 @@
 
   async function refreshStandings() {
     document.getElementById('refresh-status').textContent = 'Refreshing…';
+    // Also re-fetch claims so the standings display names stay current
+    await loadClaims();
     const standings = await loadStandings();
     leagueData.standings = standings;
     renderStandings(standings);
@@ -1242,15 +1275,16 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting…';
 
-    const ok = await submitClaim(pendingTeamId, name, email);
+    const hashed = simpleHash(pin);
+    const ok = await submitClaim(pendingTeamId, name, email, hashed);
 
     submitBtn.disabled = false;
     submitBtn.textContent = 'Claim Team';
 
     if (ok) {
-      // Store claim + hashed PIN in local state
+      // Mirror in local state so the UI updates instantly
       claimedTeams[pendingTeamId] = name;
-      claimPins[pendingTeamId]    = simpleHash(pin);
+      claimPins[pendingTeamId]    = hashed;
       saveClaimedTeams();
 
       // Update UI without full re-render
@@ -1261,7 +1295,7 @@
       closeModal();
       showToast(`✓ ${name} claimed the team!`);
     } else {
-      errEl.textContent = '⚠ Submission failed. Please try again.';
+      errEl.textContent = '⚠ Submission failed — the team may already be claimed. Try refreshing.';
     }
   }
 
@@ -1293,7 +1327,7 @@
     pendingUnclaimTeamId = null;
   }
 
-  function handleUnclaim() {
+  async function handleUnclaim() {
     const pin   = document.getElementById('unclaim-pin').value.trim();
     const errEl = document.getElementById('unclaim-error');
 
@@ -1306,28 +1340,45 @@
       return;
     }
 
+    const hashed     = simpleHash(pin);
     const storedHash = claimPins[pendingUnclaimTeamId];
 
-    // If no PIN is stored (e.g. claimed before this feature), allow release
-    if (storedHash && storedHash !== simpleHash(pin)) {
+    // Offline mode: verify PIN locally before attempting server release
+    if (!isLive() && storedHash && storedHash !== hashed) {
       errEl.textContent = '⚠ Incorrect PIN. Try again.';
       document.getElementById('unclaim-pin').value = '';
       document.getElementById('unclaim-pin').focus();
       return;
     }
 
-    // Release the team
-    const releasedTeamId = pendingUnclaimTeamId;
-    delete claimedTeams[releasedTeamId];
-    delete claimPins[releasedTeamId];
-    saveClaimedTeams();
+    // Disable button while in-flight
+    const releaseBtn = document.getElementById('unclaim-submit-btn');
+    releaseBtn.disabled = true;
+    releaseBtn.textContent = 'Releasing…';
 
-    refreshTeamRow(releasedTeamId);
-    updateHeroStats(leagueData);
-    renderStandings(leagueData.standings);
+    const ok = await submitRelease(pendingUnclaimTeamId, hashed);
 
-    closeUnclaimModal();
-    showToast('✓ Team released — it\'s available again!');
+    releaseBtn.disabled = false;
+    releaseBtn.textContent = 'Release Team';
+
+    if (ok) {
+      // Mirror in local state
+      const releasedTeamId = pendingUnclaimTeamId;
+      delete claimedTeams[releasedTeamId];
+      delete claimPins[releasedTeamId];
+      saveClaimedTeams();
+
+      refreshTeamRow(releasedTeamId);
+      updateHeroStats(leagueData);
+      renderStandings(leagueData.standings);
+
+      closeUnclaimModal();
+      showToast('✓ Team released — it\'s available again!');
+    } else {
+      errEl.textContent = '⚠ Incorrect PIN or server error. Try again.';
+      document.getElementById('unclaim-pin').value = '';
+      document.getElementById('unclaim-pin').focus();
+    }
   }
 
   // Close unclaim modal on backdrop click
@@ -1381,22 +1432,32 @@
   // =============================================================
 
   async function boot() {
-    // 1. Load previously claimed teams + PINs from localStorage
-    claimedTeams = loadClaimedTeamsFromStorage();
-    claimPins    = loadPinsFromStorage();
-
-    // 2. Load league structure (mock or Google Sheets)
+    // 1. Load static league structure
     leagueData = await loadLeagueData();
 
-    // 3. Render conference/division/team grid
+    // 2. Fetch claims from Google Sheets (or localStorage in offline mode)
+    //    This is what makes all users see the same claimed teams.
+    await loadClaims();
+
+    // 3. Fetch live standings (falls back to mock data if not configured)
+    const standings = await loadStandings();
+    leagueData.standings = standings;
+
+    // 4. Render conference/division/team grid
     renderLeague(leagueData);
 
-    // 4. Populate standings filter + render standings
+    // 5. Populate standings filter + render standings
     populateStandingsFilter();
     renderStandings(leagueData.standings);
 
-    // 5. Update footer link
+    // 6. Update footer link
     document.getElementById('footer-sheet-link').href = GOOGLE_SHEETS_CONFIG.SHEET_PUBLIC_URL;
+
+    // 7. Show a subtle indicator if running in offline/local mode
+    if (!isLive()) {
+      const sub = document.getElementById('hero-sub');
+      if (sub) sub.textContent += ' · Local mode — claims not shared across devices';
+    }
   }
 
   boot();
