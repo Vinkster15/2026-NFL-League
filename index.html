@@ -108,6 +108,10 @@
       background: rgba(232,160,32,.08);
       text-decoration: none;
     }
+    nav a.active {
+      color: var(--accent);
+      background: rgba(232,160,32,.1);
+    }
 
     /* ---- Hero banner ---- */
     .hero {
@@ -661,8 +665,8 @@
     <nav>
       <a href="#signup">Signup</a>
       <a href="#league">League</a>
-      <a href="#standings">Standings</a>
-      <a href="#matchups">Matchups</a>
+      <a href="standings.html">Standings</a>
+      <a href="matchups.html">Matchups</a>
     </nav>
   </div>
 </header>
@@ -733,50 +737,6 @@
   <div class="conf-grid" id="conference-grid">
     <!-- Populated by JS -->
     <p style="color:var(--muted);font-family:var(--font-mono);font-size:13px">Loading league data…</p>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ============================================================
-     STANDINGS
-     ============================================================ -->
-<section class="section container" id="standings">
-  <p class="section-title">Weekly Standings</p>
-  <h2 class="block-heading">Division Standings</h2>
-
-  <div class="standings-controls">
-    <select id="standings-filter">
-      <option value="all">All Divisions</option>
-      <!-- Options populated by JS -->
-    </select>
-    <button class="btn-refresh" onclick="refreshStandings()">↻ Refresh</button>
-    <span id="refresh-status">Last updated: —</span>
-  </div>
-
-  <div class="standings-grid" id="standings-grid">
-    <!-- Populated by JS -->
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ============================================================
-     MATCHUPS
-     ============================================================ -->
-<section class="section container" id="matchups">
-  <p class="section-title">Schedule</p>
-  <h2 class="block-heading">Weekly Matchups</h2>
-
-  <div class="matchups-controls">
-    <select id="matchups-week-filter" onchange="renderMatchups()">
-      <option value="">Loading…</option>
-    </select>
-    <button class="btn-refresh" onclick="refreshMatchups()">↻ Refresh</button>
-  </div>
-
-  <div class="matchups-grid" id="matchups-grid">
-    <p id="matchups-empty" style="display:none">No matchups found for this week.</p>
   </div>
 </section>
 
@@ -1137,30 +1097,6 @@
   }
 
   /**
-   * loadStandings()
-   * ---------------
-   * Fetches current W/L records from the Standings sheet tab.
-   * Falls back to the mock data when not configured.
-   */
-  async function loadStandings() {
-    if (!isLive()) return MOCK_LEAGUE.standings;
-
-    try {
-      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=standings');
-      const data = await res.json();
-
-      if (data.success && data.standings && data.standings.length > 0) {
-        return data.standings;
-      }
-      console.warn('loadStandings: empty or error response, using mock data');
-    } catch (err) {
-      console.warn('loadStandings: fetch failed, using mock data', err);
-    }
-
-    return MOCK_LEAGUE.standings;
-  }
-
-  /**
    * submitClaim(teamId, displayName, email, hashedPin)
    * ---------------------------------------------------
    * Posts a claim to the Apps Script Web App, which writes it to the
@@ -1382,95 +1318,6 @@
   }
 
   // =============================================================
-  //  RENDER — STANDINGS
-  // =============================================================
-
-  function renderStandings(standings) {
-    const grid = document.getElementById('standings-grid');
-    const filter = document.getElementById('standings-filter');
-    const selectedDiv = filter.value;
-
-    grid.innerHTML = '';
-
-    const divisions = selectedDiv === 'all'
-      ? leagueData.divisions
-      : leagueData.divisions.filter(d => d.id === selectedDiv);
-
-    for (const div of divisions) {
-      const conf = leagueData.conferences.find(c => c.id === div.confId);
-      const teams = leagueData.teams.filter(t => t.divId === div.id);
-
-      // Build rows sorted by wins desc
-      const rows = teams.map(team => {
-        const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
-        const played = s.wins + s.losses;
-        const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
-        const abbr = TEAM_ABBR[team.name] || team.name;
-        const dk   = allTeamsClaimed() && window._claimUsernames && window._claimUsernames[team.id];
-        const displayName = dk
-          ? `${abbr} <span style="color:var(--accent);font-size:11px">[${escHtml(dk)}]</span>`
-          : abbr;
-        return { ...s, pct, displayName, wins: s.wins, losses: s.losses };
-      }).sort((a, b) => b.wins - a.wins || a.losses - b.losses);
-
-      const card = document.createElement('div');
-      card.className = 'standings-card';
-      card.innerHTML = `
-        <div class="standings-card-header">${conf.name} ${div.name}</div>
-        <table class="standings-table">
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th>W</th>
-              <th>L</th>
-              <th>PCT</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map((r, i) => `
-              <tr>
-                <td><span class="rank-num">${i + 1}</span>${r.displayName}</td>
-                <td>${r.wins}</td>
-                <td>${r.losses}</td>
-                <td class="win-pct">${r.pct}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-
-      grid.appendChild(card);
-    }
-
-    document.getElementById('refresh-status').textContent =
-      'Last updated: ' + new Date().toLocaleTimeString();
-  }
-
-  async function refreshStandings() {
-    document.getElementById('refresh-status').textContent = 'Refreshing…';
-    // Also re-fetch claims so the standings display names stay current
-    await loadClaims();
-    const standings = await loadStandings();
-    leagueData.standings = standings;
-    renderStandings(standings);
-  }
-
-  // Populate the division filter dropdown
-  function populateStandingsFilter() {
-    const sel = document.getElementById('standings-filter');
-    for (const conf of leagueData.conferences) {
-      const divs = leagueData.divisions.filter(d => d.confId === conf.id);
-      for (const div of divs) {
-        const opt = document.createElement('option');
-        opt.value = div.id;
-        opt.textContent = `${conf.name} ${div.name}`;
-        sel.appendChild(opt);
-      }
-    }
-    sel.addEventListener('change', () => renderStandings(leagueData.standings));
-  }
-
-  // =============================================================
   //  MODAL — OPEN / CLOSE / SUBMIT
   // =============================================================
 
@@ -1551,7 +1398,6 @@
       // Update UI without full re-render
       refreshTeamRow(pendingTeamId);
       updateHeroStats(leagueData);
-      renderStandings(leagueData.standings);
 
       closeModal();
       showToast(`✓ ${name} claimed the team!`);
@@ -1638,7 +1484,6 @@
 
       refreshTeamRow(releasedTeamId);
       updateHeroStats(leagueData);
-      renderStandings(leagueData.standings);
 
       closeUnclaimModal();
       showToast('✓ Team released — it\'s available again!');
@@ -1696,116 +1541,6 @@
   }
 
   // =============================================================
-  //  MATCHUPS
-  // =============================================================
-
-  window._matchups = [];
-
-  async function loadMatchups() {
-    if (!isLive()) return [];
-    try {
-      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=matchups');
-      const data = await res.json();
-      return (data.success && data.matchups) ? data.matchups : [];
-    } catch (err) {
-      console.warn('loadMatchups: fetch failed', err);
-      return [];
-    }
-  }
-
-  function populateWeekFilter(keepWeek) {
-    const weeks = [...new Set(window._matchups.map(m => Number(m.week)))].sort((a, b) => a - b);
-    const sel   = document.getElementById('matchups-week-filter');
-    sel.innerHTML = '';
-
-    if (weeks.length === 0) {
-      sel.innerHTML = '<option value="">No matchups yet</option>';
-      return;
-    }
-
-    weeks.forEach(w => {
-      const opt       = document.createElement('option');
-      opt.value       = w;
-      opt.textContent = 'Week ' + w;
-      sel.appendChild(opt);
-    });
-
-    // Restore previously selected week, or default to the latest
-    sel.value = (keepWeek && weeks.includes(Number(keepWeek))) ? keepWeek : weeks[weeks.length - 1];
-  }
-
-  function renderMatchups() {
-    const sel     = document.getElementById('matchups-week-filter');
-    const selWeek = Number(sel.value);
-    const grid    = document.getElementById('matchups-grid');
-    const empty   = document.getElementById('matchups-empty');
-    const week    = window._matchups.filter(m => Number(m.week) === selWeek);
-
-    // Clear previous cards (but not the empty message element)
-    Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
-    empty.style.display = week.length === 0 ? 'block' : 'none';
-
-    week.forEach((m, i) => {
-      const played    = m.homeScore !== null && m.awayScore !== null;
-      const homeWins  = played && m.homeScore > m.awayScore;
-      const awayWins  = played && m.awayScore > m.homeScore;
-
-      const homeAbbr  = TEAM_ABBR[m.homeTeam] || m.homeTeam;
-      const awayAbbr  = TEAM_ABBR[m.awayTeam] || m.awayTeam;
-      const homeDK    = getPlayerForTeam(m.homeTeam);
-      const awayDK    = getPlayerForTeam(m.awayTeam);
-      const homeLabel = homeDK ? `${homeAbbr} <span class="matchup-player">- ${escHtml(homeDK)}</span>` : homeAbbr;
-      const awayLabel = awayDK ? `${awayAbbr} <span class="matchup-player">- ${escHtml(awayDK)}</span>` : awayAbbr;
-
-      const card = document.createElement('div');
-      card.className = 'matchup-card';
-      card.innerHTML = `
-        <div class="matchup-card-header">Week ${m.week} · Game ${i + 1}</div>
-        <div class="matchup-body">
-          <div class="matchup-team">
-            <div class="matchup-team-name ${played ? (homeWins ? 'winner' : 'loser') : ''}">
-              ${homeLabel}
-            </div>
-          </div>
-          <div class="matchup-score-wrap">
-            ${played
-              ? `<div class="matchup-score-nums">
-                   <span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span>
-                   <span class="matchup-score-sep">–</span>
-                   <span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span>
-                 </div>
-                 <div class="matchup-final-label">Final</div>`
-              : `<div class="matchup-score upcoming">VS</div>`
-            }
-          </div>
-          <div class="matchup-team">
-            <div class="matchup-team-name ${played ? (awayWins ? 'winner' : 'loser') : ''}">
-              ${awayLabel}
-            </div>
-          </div>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  // Find the display name (player) who claimed a given team name
-  // Returns null until all 32 teams are claimed (names stay anonymous until then)
-  function getPlayerForTeam(teamName) {
-    if (!leagueData || !allTeamsClaimed()) return null;
-    const team = leagueData.teams.find(t => t.name === teamName);
-    if (!team) return null;
-    return claimedTeams[team.id] || null;
-  }
-
-  async function refreshMatchups() {
-    const prevWeek = document.getElementById('matchups-week-filter').value;
-    window._matchups    = await loadMatchups();
-    populateWeekFilter(prevWeek);
-    renderMatchups();
-  }
-
-  // =============================================================
   //  BOOT — runs on page load
   // =============================================================
 
@@ -1814,28 +1549,13 @@
     leagueData = await loadLeagueData();
 
     // 2. Fetch claims from Google Sheets (or localStorage in offline mode)
-    //    This is what makes all users see the same claimed teams.
     await loadClaims();
 
-    // 3. Fetch live standings (falls back to mock data if not configured)
-    const standings = await loadStandings();
-    leagueData.standings = standings;
-
-    // 4. Render conference/division/team grid
+    // 3. Render conference/division/team grid
     renderLeague(leagueData);
 
-    // 5. Populate standings filter + render standings
-    populateStandingsFilter();
-    renderStandings(leagueData.standings);
-
-    // 6. Load and render matchups
-    window._matchups = await loadMatchups();
-    populateWeekFilter();
-    renderMatchups();
-
-    // 7. Update footer link
+    // 4. Update footer link
     document.getElementById('footer-sheet-link').href = GOOGLE_SHEETS_CONFIG.SHEET_PUBLIC_URL;
-
   }
 
   // Show payment section only before August 30, 2026
@@ -1853,14 +1573,12 @@
     Each week:
     1. Open your Google Sheet
     2. Update the Standings tab with new W/L records
-    3. The dashboard auto-refreshes when users click ↻ Refresh,
-       or you can set a timed reload:
-         setInterval(refreshStandings, 60 * 60 * 1000); // hourly
+    3. Visit standings.html and click ↻ Refresh to see updated data.
     4. No code changes or GitHub push needed for standings updates.
 
     For structural changes (teams, divisions):
     1. Update MOCK_LEAGUE above (or your Google Sheet source)
-    2. Commit and push index.html to GitHub
+    2. Commit and push all .html files to GitHub
     3. GitHub Pages serves the update automatically.
     ============================================================
   */

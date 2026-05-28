@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Standings · 2026 NFL League</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --bg:          #0a0c0f;
+      --surface:     #111418;
+      --surface2:    #181c22;
+      --border:      #232830;
+      --border2:     #2e3540;
+      --accent:      #e8a020;
+      --accent2:     #c47010;
+      --green:       #2ecc71;
+      --red:         #e74c3c;
+      --muted:       #5a6270;
+      --text:        #d8dde6;
+      --text-dim:    #8892a0;
+      --heading:     #f0f4f8;
+      --radius:      4px;
+      --font-ui:     'Barlow Condensed', sans-serif;
+      --font-mono:   'IBM Plex Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 0 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      gap: 16px;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      color: var(--heading);
+      white-space: nowrap;
+    }
+    .logo span { color: var(--accent); }
+    nav { display: flex; gap: 4px; flex-wrap: wrap; }
+    nav a {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 6px 10px;
+      border-radius: var(--radius);
+      transition: color .15s, background .15s;
+    }
+    nav a:hover, nav a:focus {
+      color: var(--accent);
+      background: rgba(232,160,32,.08);
+      text-decoration: none;
+    }
+    nav a.active {
+      color: var(--accent);
+      background: rgba(232,160,32,.1);
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0d1117 0%, #141920 60%, #1a1000 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 40px 16px 32px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 900;
+      letter-spacing: .03em;
+      color: var(--heading);
+      line-height: 1.1;
+    }
+    .hero h1 span { color: var(--accent); }
+
+    .section { padding: 40px 16px; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+      margin-bottom: 24px;
+    }
+    h2.block-heading {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 900;
+      color: var(--heading);
+      letter-spacing: .02em;
+      margin-bottom: 20px;
+    }
+
+    .standings-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .standings-controls select {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      padding: 7px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      outline: none;
+    }
+    .standings-controls select:focus { border-color: var(--accent); }
+    .btn-refresh {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 7px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .btn-refresh:hover { background: var(--accent); color: #000; }
+    #refresh-status {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .standings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .standings-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .standings-card-header {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 9px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .standings-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .standings-table th {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 7px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+    }
+    .standings-table th:not(:first-child) { text-align: center; }
+    .standings-table td {
+      padding: 7px 14px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .standings-table tr:last-child td { border-bottom: none; }
+    .standings-table td:not(:first-child) {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .standings-table tr:hover td { background: rgba(255,255,255,.025); }
+    .rank-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-right: 6px;
+    }
+    .win-pct { color: var(--accent); }
+
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-left: 3px solid var(--green);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      z-index: 300;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 16px;
+      text-align: center;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+    }
+    footer a { color: var(--muted); text-decoration: underline; }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="logo" href="index.html" style="text-decoration:none">2026 <span>NFL</span> League</a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="standings.html" class="active">Standings</a>
+      <a href="matchups.html">Matchups</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Division <span>Standings</span></h1>
+</section>
+
+<section class="section container" id="standings">
+  <p class="section-title">Weekly Standings</p>
+  <h2 class="block-heading">Division Standings</h2>
+
+  <div class="standings-controls">
+    <select id="standings-filter">
+      <option value="all">All Divisions</option>
+    </select>
+    <button class="btn-refresh" onclick="refreshStandings()">↻ Refresh</button>
+    <span id="refresh-status">Last updated: —</span>
+  </div>
+
+  <div class="standings-grid" id="standings-grid">
+    <p style="color:var(--muted);font-family:var(--font-mono);font-size:13px">Loading standings…</p>
+  </div>
+</section>
+
+<footer>
+  <p>2026 NFL League · <a href="index.html">Home</a></p>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const GOOGLE_SHEETS_CONFIG = {
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwyH3OWsW_pqlVC3aMKUJusr3BeFYT4Cd3fP_gQL4lA_OzF9FhSadMtNM0P55qZ0OUikw/exec',
+    SHEET_PUBLIC_URL: 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit',
+  };
+
+  function isLive() {
+    return GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL.indexOf('YOUR_SCRIPT_ID') === -1;
+  }
+
+  const MOCK_LEAGUE = {
+    conferences: [
+      { id: 'afc', name: 'AFC', fullName: 'American Football Conference' },
+      { id: 'nfc', name: 'NFC', fullName: 'National Football Conference' },
+    ],
+    divisions: [
+      { id: 'afc-north', confId: 'afc', name: 'North' },
+      { id: 'afc-south', confId: 'afc', name: 'South' },
+      { id: 'afc-east',  confId: 'afc', name: 'East'  },
+      { id: 'afc-west',  confId: 'afc', name: 'West'  },
+      { id: 'nfc-north', confId: 'nfc', name: 'North' },
+      { id: 'nfc-south', confId: 'nfc', name: 'South' },
+      { id: 'nfc-east',  confId: 'nfc', name: 'East'  },
+      { id: 'nfc-west',  confId: 'nfc', name: 'West'  },
+    ],
+    teams: [
+      { id: 't01', divId: 'afc-north', name: 'Baltimore Ravens'     },
+      { id: 't02', divId: 'afc-north', name: 'Cincinnati Bengals'   },
+      { id: 't03', divId: 'afc-north', name: 'Cleveland Browns'     },
+      { id: 't04', divId: 'afc-north', name: 'Pittsburgh Steelers'  },
+      { id: 't05', divId: 'afc-south', name: 'Houston Texans'       },
+      { id: 't06', divId: 'afc-south', name: 'Indianapolis Colts'   },
+      { id: 't07', divId: 'afc-south', name: 'Jacksonville Jaguars' },
+      { id: 't08', divId: 'afc-south', name: 'Tennessee Titans'     },
+      { id: 't09', divId: 'afc-east',  name: 'Buffalo Bills'        },
+      { id: 't10', divId: 'afc-east',  name: 'Miami Dolphins'       },
+      { id: 't11', divId: 'afc-east',  name: 'New England Patriots' },
+      { id: 't12', divId: 'afc-east',  name: 'New York Jets'        },
+      { id: 't13', divId: 'afc-west',  name: 'Denver Broncos'       },
+      { id: 't14', divId: 'afc-west',  name: 'Kansas City Chiefs'   },
+      { id: 't15', divId: 'afc-west',  name: 'Las Vegas Raiders'    },
+      { id: 't16', divId: 'afc-west',  name: 'Los Angeles Chargers' },
+      { id: 't17', divId: 'nfc-north', name: 'Chicago Bears'        },
+      { id: 't18', divId: 'nfc-north', name: 'Detroit Lions'        },
+      { id: 't19', divId: 'nfc-north', name: 'Green Bay Packers'    },
+      { id: 't20', divId: 'nfc-north', name: 'Minnesota Vikings'    },
+      { id: 't21', divId: 'nfc-south', name: 'Atlanta Falcons'      },
+      { id: 't22', divId: 'nfc-south', name: 'Carolina Panthers'    },
+      { id: 't23', divId: 'nfc-south', name: 'New Orleans Saints'   },
+      { id: 't24', divId: 'nfc-south', name: 'Tampa Bay Buccaneers' },
+      { id: 't25', divId: 'nfc-east',  name: 'Dallas Cowboys'       },
+      { id: 't26', divId: 'nfc-east',  name: 'New York Giants'      },
+      { id: 't27', divId: 'nfc-east',  name: 'Philadelphia Eagles'  },
+      { id: 't28', divId: 'nfc-east',  name: 'Washington Commanders'},
+      { id: 't29', divId: 'nfc-west',  name: 'Arizona Cardinals'    },
+      { id: 't30', divId: 'nfc-west',  name: 'Los Angeles Rams'     },
+      { id: 't31', divId: 'nfc-west',  name: 'San Francisco 49ers'  },
+      { id: 't32', divId: 'nfc-west',  name: 'Seattle Seahawks'     },
+    ],
+    standings: [
+      { teamId: 't01', wins: 5, losses: 2 },
+      { teamId: 't02', wins: 4, losses: 3 },
+      { teamId: 't03', wins: 3, losses: 4 },
+      { teamId: 't04', wins: 1, losses: 6 },
+      { teamId: 't05', wins: 6, losses: 1 },
+      { teamId: 't06', wins: 4, losses: 3 },
+      { teamId: 't07', wins: 3, losses: 4 },
+      { teamId: 't08', wins: 2, losses: 5 },
+      { teamId: 't09', wins: 5, losses: 2 },
+      { teamId: 't10', wins: 5, losses: 2 },
+      { teamId: 't11', wins: 3, losses: 4 },
+      { teamId: 't12', wins: 2, losses: 5 },
+      { teamId: 't13', wins: 7, losses: 0 },
+      { teamId: 't14', wins: 4, losses: 3 },
+      { teamId: 't15', wins: 3, losses: 4 },
+      { teamId: 't16', wins: 0, losses: 7 },
+      { teamId: 't17', wins: 6, losses: 1 },
+      { teamId: 't18', wins: 5, losses: 2 },
+      { teamId: 't19', wins: 2, losses: 5 },
+      { teamId: 't20', wins: 1, losses: 6 },
+      { teamId: 't21', wins: 4, losses: 3 },
+      { teamId: 't22', wins: 4, losses: 3 },
+      { teamId: 't23', wins: 3, losses: 4 },
+      { teamId: 't24', wins: 3, losses: 4 },
+      { teamId: 't25', wins: 5, losses: 2 },
+      { teamId: 't26', wins: 4, losses: 3 },
+      { teamId: 't27', wins: 3, losses: 4 },
+      { teamId: 't28', wins: 2, losses: 5 },
+      { teamId: 't29', wins: 6, losses: 1 },
+      { teamId: 't30', wins: 4, losses: 3 },
+      { teamId: 't31', wins: 3, losses: 4 },
+      { teamId: 't32', wins: 1, losses: 6 },
+    ],
+  };
+
+  const TEAM_ABBR = {
+    'Baltimore Ravens':      'BAL',
+    'Cincinnati Bengals':    'CIN',
+    'Cleveland Browns':      'CLE',
+    'Pittsburgh Steelers':   'PIT',
+    'Houston Texans':        'HOU',
+    'Indianapolis Colts':    'IND',
+    'Jacksonville Jaguars':  'JAC',
+    'Tennessee Titans':      'TEN',
+    'Buffalo Bills':         'BUF',
+    'Miami Dolphins':        'MIA',
+    'New England Patriots':  'NE',
+    'New York Jets':         'NYJ',
+    'Denver Broncos':        'DEN',
+    'Kansas City Chiefs':    'KC',
+    'Las Vegas Raiders':     'LV',
+    'Los Angeles Chargers':  'LAC',
+    'Chicago Bears':         'CHI',
+    'Detroit Lions':         'DET',
+    'Green Bay Packers':     'GB',
+    'Minnesota Vikings':     'MIN',
+    'Atlanta Falcons':       'ATL',
+    'Carolina Panthers':     'CAR',
+    'New Orleans Saints':    'NO',
+    'Tampa Bay Buccaneers':  'TB',
+    'Dallas Cowboys':        'DAL',
+    'New York Giants':       'NYG',
+    'Philadelphia Eagles':   'PHI',
+    'Washington Commanders': 'WAS',
+    'Arizona Cardinals':     'ARI',
+    'Los Angeles Rams':      'LAR',
+    'San Francisco 49ers':   'SF',
+    'Seattle Seahawks':      'SEA',
+  };
+
+  // ── Runtime state ──────────────────────────────────────────────
+  let leagueData = null;
+  let claimedTeams = {};
+  window._claimUsernames = {};
+
+  function allTeamsClaimed() {
+    if (!leagueData) return false;
+    return Object.keys(claimedTeams).length >= leagueData.teams.length;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+  }
+
+  // ── Data loading ───────────────────────────────────────────────
+  async function loadClaims() {
+    if (!isLive()) {
+      try {
+        const raw = localStorage.getItem('gfl_claimed');
+        claimedTeams = raw ? JSON.parse(raw) : {};
+        const rawU = localStorage.getItem('gfl_usernames');
+        window._claimUsernames = rawU ? JSON.parse(rawU) : {};
+      } catch (e) {}
+      return;
+    }
+    try {
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=claims');
+      const data = await res.json();
+      if (data.success) {
+        claimedTeams           = data.claims    || {};
+        window._claimUsernames = data.usernames || {};
+      }
+    } catch (err) {
+      console.warn('loadClaims failed', err);
+    }
+  }
+
+  async function loadStandings() {
+    if (!isLive()) return MOCK_LEAGUE.standings;
+    try {
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=standings');
+      const data = await res.json();
+      if (data.success && data.standings && data.standings.length > 0) {
+        return data.standings;
+      }
+    } catch (err) {
+      console.warn('loadStandings failed, using mock data', err);
+    }
+    return MOCK_LEAGUE.standings;
+  }
+
+  // ── Render ─────────────────────────────────────────────────────
+  function renderStandings(standings) {
+    const grid = document.getElementById('standings-grid');
+    const filter = document.getElementById('standings-filter');
+    const selectedDiv = filter.value;
+
+    grid.innerHTML = '';
+
+    const divisions = selectedDiv === 'all'
+      ? leagueData.divisions
+      : leagueData.divisions.filter(d => d.id === selectedDiv);
+
+    for (const div of divisions) {
+      const conf  = leagueData.conferences.find(c => c.id === div.confId);
+      const teams = leagueData.teams.filter(t => t.divId === div.id);
+
+      const rows = teams.map(team => {
+        const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
+        const played = s.wins + s.losses;
+        const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
+        const abbr = TEAM_ABBR[team.name] || team.name;
+        const dk   = allTeamsClaimed() && window._claimUsernames && window._claimUsernames[team.id];
+        const displayName = dk
+          ? `${abbr} <span style="color:var(--accent);font-size:11px">[${escHtml(dk)}]</span>`
+          : abbr;
+        return { ...s, pct, displayName, wins: s.wins, losses: s.losses };
+      }).sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+
+      const card = document.createElement('div');
+      card.className = 'standings-card';
+      card.innerHTML = `
+        <div class="standings-card-header">${conf.name} ${div.name}</div>
+        <table class="standings-table">
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>W</th>
+              <th>L</th>
+              <th>PCT</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r, i) => `
+              <tr>
+                <td><span class="rank-num">${i + 1}</span>${r.displayName}</td>
+                <td>${r.wins}</td>
+                <td>${r.losses}</td>
+                <td class="win-pct">${r.pct}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      grid.appendChild(card);
+    }
+
+    document.getElementById('refresh-status').textContent =
+      'Last updated: ' + new Date().toLocaleTimeString();
+  }
+
+  function populateStandingsFilter() {
+    const sel = document.getElementById('standings-filter');
+    for (const conf of leagueData.conferences) {
+      const divs = leagueData.divisions.filter(d => d.confId === conf.id);
+      for (const div of divs) {
+        const opt = document.createElement('option');
+        opt.value = div.id;
+        opt.textContent = `${conf.name} ${div.name}`;
+        sel.appendChild(opt);
+      }
+    }
+    sel.addEventListener('change', () => renderStandings(leagueData.standings));
+  }
+
+  async function refreshStandings() {
+    document.getElementById('refresh-status').textContent = 'Refreshing…';
+    await loadClaims();
+    const standings = await loadStandings();
+    leagueData.standings = standings;
+    renderStandings(standings);
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────
+  async function boot() {
+    leagueData = MOCK_LEAGUE;
+    await loadClaims();
+    const standings = await loadStandings();
+    leagueData.standings = standings;
+    populateStandingsFilter();
+    renderStandings(leagueData.standings);
+  }
+
+  boot();
+</script>
+</body>
+</html>

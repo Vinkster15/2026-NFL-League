@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matchups · 2026 NFL League</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --bg:          #0a0c0f;
+      --surface:     #111418;
+      --surface2:    #181c22;
+      --border:      #232830;
+      --border2:     #2e3540;
+      --accent:      #e8a020;
+      --accent2:     #c47010;
+      --green:       #2ecc71;
+      --red:         #e74c3c;
+      --muted:       #5a6270;
+      --text:        #d8dde6;
+      --text-dim:    #8892a0;
+      --heading:     #f0f4f8;
+      --radius:      4px;
+      --font-ui:     'Barlow Condensed', sans-serif;
+      --font-mono:   'IBM Plex Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 0 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      gap: 16px;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      color: var(--heading);
+      white-space: nowrap;
+    }
+    .logo span { color: var(--accent); }
+    nav { display: flex; gap: 4px; flex-wrap: wrap; }
+    nav a {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 6px 10px;
+      border-radius: var(--radius);
+      transition: color .15s, background .15s;
+    }
+    nav a:hover, nav a:focus {
+      color: var(--accent);
+      background: rgba(232,160,32,.08);
+      text-decoration: none;
+    }
+    nav a.active {
+      color: var(--accent);
+      background: rgba(232,160,32,.1);
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0d1117 0%, #141920 60%, #1a1000 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 40px 16px 32px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 900;
+      letter-spacing: .03em;
+      color: var(--heading);
+      line-height: 1.1;
+    }
+    .hero h1 span { color: var(--accent); }
+
+    .section { padding: 40px 16px; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+      margin-bottom: 24px;
+    }
+    h2.block-heading {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 900;
+      color: var(--heading);
+      letter-spacing: .02em;
+      margin-bottom: 20px;
+    }
+
+    .matchups-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .matchups-controls select {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      padding: 7px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      outline: none;
+    }
+    .matchups-controls select:focus { border-color: var(--accent); }
+    .btn-refresh {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 7px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .btn-refresh:hover { background: var(--accent); color: #000; }
+
+    .matchups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .matchup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .matchup-card-header {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 7px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+    }
+    .matchup-body {
+      padding: 16px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .matchup-team {
+      flex: 1;
+      text-align: center;
+    }
+    .matchup-team-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .matchup-team-name.winner { color: var(--green); }
+    .matchup-team-name.loser  { color: var(--muted); }
+    .matchup-player {
+      font-size: 11px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      margin-top: 3px;
+    }
+    .matchup-score {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--heading);
+      font-family: var(--font-mono);
+      text-align: center;
+      min-width: 60px;
+      line-height: 1;
+    }
+    .matchup-score.upcoming {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .matchup-score-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 70px;
+    }
+    .matchup-score-nums {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--heading);
+    }
+    .matchup-score-sep {
+      font-size: 18px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .matchup-final-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    #matchups-empty {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--muted);
+      padding: 20px 0;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-left: 3px solid var(--green);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      z-index: 300;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 16px;
+      text-align: center;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+    }
+    footer a { color: var(--muted); text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="logo" href="index.html" style="text-decoration:none">2026 <span>NFL</span> League</a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="standings.html">Standings</a>
+      <a href="matchups.html" class="active">Matchups</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Weekly <span>Matchups</span></h1>
+</section>
+
+<section class="section container" id="matchups">
+  <p class="section-title">Schedule</p>
+  <h2 class="block-heading">Weekly Matchups</h2>
+
+  <div class="matchups-controls">
+    <select id="matchups-week-filter" onchange="renderMatchups()">
+      <option value="">Loading…</option>
+    </select>
+    <button class="btn-refresh" onclick="refreshMatchups()">↻ Refresh</button>
+  </div>
+
+  <div class="matchups-grid" id="matchups-grid">
+    <p id="matchups-empty" style="display:none">No matchups found for this week.</p>
+  </div>
+</section>
+
+<footer>
+  <p>2026 NFL League · <a href="index.html">Home</a></p>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const GOOGLE_SHEETS_CONFIG = {
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwyH3OWsW_pqlVC3aMKUJusr3BeFYT4Cd3fP_gQL4lA_OzF9FhSadMtNM0P55qZ0OUikw/exec',
+    SHEET_PUBLIC_URL: 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit',
+  };
+
+  function isLive() {
+    return GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL.indexOf('YOUR_SCRIPT_ID') === -1;
+  }
+
+  const MOCK_LEAGUE = {
+    conferences: [
+      { id: 'afc', name: 'AFC' },
+      { id: 'nfc', name: 'NFC' },
+    ],
+    teams: [
+      { id: 't01', divId: 'afc-north', name: 'Baltimore Ravens'     },
+      { id: 't02', divId: 'afc-north', name: 'Cincinnati Bengals'   },
+      { id: 't03', divId: 'afc-north', name: 'Cleveland Browns'     },
+      { id: 't04', divId: 'afc-north', name: 'Pittsburgh Steelers'  },
+      { id: 't05', divId: 'afc-south', name: 'Houston Texans'       },
+      { id: 't06', divId: 'afc-south', name: 'Indianapolis Colts'   },
+      { id: 't07', divId: 'afc-south', name: 'Jacksonville Jaguars' },
+      { id: 't08', divId: 'afc-south', name: 'Tennessee Titans'     },
+      { id: 't09', divId: 'afc-east',  name: 'Buffalo Bills'        },
+      { id: 't10', divId: 'afc-east',  name: 'Miami Dolphins'       },
+      { id: 't11', divId: 'afc-east',  name: 'New England Patriots' },
+      { id: 't12', divId: 'afc-east',  name: 'New York Jets'        },
+      { id: 't13', divId: 'afc-west',  name: 'Denver Broncos'       },
+      { id: 't14', divId: 'afc-west',  name: 'Kansas City Chiefs'   },
+      { id: 't15', divId: 'afc-west',  name: 'Las Vegas Raiders'    },
+      { id: 't16', divId: 'afc-west',  name: 'Los Angeles Chargers' },
+      { id: 't17', divId: 'nfc-north', name: 'Chicago Bears'        },
+      { id: 't18', divId: 'nfc-north', name: 'Detroit Lions'        },
+      { id: 't19', divId: 'nfc-north', name: 'Green Bay Packers'    },
+      { id: 't20', divId: 'nfc-north', name: 'Minnesota Vikings'    },
+      { id: 't21', divId: 'nfc-south', name: 'Atlanta Falcons'      },
+      { id: 't22', divId: 'nfc-south', name: 'Carolina Panthers'    },
+      { id: 't23', divId: 'nfc-south', name: 'New Orleans Saints'   },
+      { id: 't24', divId: 'nfc-south', name: 'Tampa Bay Buccaneers' },
+      { id: 't25', divId: 'nfc-east',  name: 'Dallas Cowboys'       },
+      { id: 't26', divId: 'nfc-east',  name: 'New York Giants'      },
+      { id: 't27', divId: 'nfc-east',  name: 'Philadelphia Eagles'  },
+      { id: 't28', divId: 'nfc-east',  name: 'Washington Commanders'},
+      { id: 't29', divId: 'nfc-west',  name: 'Arizona Cardinals'    },
+      { id: 't30', divId: 'nfc-west',  name: 'Los Angeles Rams'     },
+      { id: 't31', divId: 'nfc-west',  name: 'San Francisco 49ers'  },
+      { id: 't32', divId: 'nfc-west',  name: 'Seattle Seahawks'     },
+    ],
+  };
+
+  const TEAM_ABBR = {
+    'Baltimore Ravens':      'BAL',
+    'Cincinnati Bengals':    'CIN',
+    'Cleveland Browns':      'CLE',
+    'Pittsburgh Steelers':   'PIT',
+    'Houston Texans':        'HOU',
+    'Indianapolis Colts':    'IND',
+    'Jacksonville Jaguars':  'JAC',
+    'Tennessee Titans':      'TEN',
+    'Buffalo Bills':         'BUF',
+    'Miami Dolphins':        'MIA',
+    'New England Patriots':  'NE',
+    'New York Jets':         'NYJ',
+    'Denver Broncos':        'DEN',
+    'Kansas City Chiefs':    'KC',
+    'Las Vegas Raiders':     'LV',
+    'Los Angeles Chargers':  'LAC',
+    'Chicago Bears':         'CHI',
+    'Detroit Lions':         'DET',
+    'Green Bay Packers':     'GB',
+    'Minnesota Vikings':     'MIN',
+    'Atlanta Falcons':       'ATL',
+    'Carolina Panthers':     'CAR',
+    'New Orleans Saints':    'NO',
+    'Tampa Bay Buccaneers':  'TB',
+    'Dallas Cowboys':        'DAL',
+    'New York Giants':       'NYG',
+    'Philadelphia Eagles':   'PHI',
+    'Washington Commanders': 'WAS',
+    'Arizona Cardinals':     'ARI',
+    'Los Angeles Rams':      'LAR',
+    'San Francisco 49ers':   'SF',
+    'Seattle Seahawks':      'SEA',
+  };
+
+  // ── Runtime state ──────────────────────────────────────────────
+  let claimedTeams = {};
+  window._claimUsernames = {};
+  window._matchups = [];
+
+  function allTeamsClaimed() {
+    return Object.keys(claimedTeams).length >= MOCK_LEAGUE.teams.length;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+  }
+
+  // ── Data loading ───────────────────────────────────────────────
+  async function loadClaims() {
+    if (!isLive()) {
+      try {
+        const raw = localStorage.getItem('gfl_claimed');
+        claimedTeams = raw ? JSON.parse(raw) : {};
+        const rawU = localStorage.getItem('gfl_usernames');
+        window._claimUsernames = rawU ? JSON.parse(rawU) : {};
+      } catch (e) {}
+      return;
+    }
+    try {
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=claims');
+      const data = await res.json();
+      if (data.success) {
+        claimedTeams           = data.claims    || {};
+        window._claimUsernames = data.usernames || {};
+      }
+    } catch (err) {
+      console.warn('loadClaims failed', err);
+    }
+  }
+
+  async function loadMatchups() {
+    if (!isLive()) return [];
+    try {
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=matchups');
+      const data = await res.json();
+      return (data.success && data.matchups) ? data.matchups : [];
+    } catch (err) {
+      console.warn('loadMatchups failed', err);
+      return [];
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────────
+  function getPlayerForTeam(teamName) {
+    if (!allTeamsClaimed()) return null;
+    const team = MOCK_LEAGUE.teams.find(t => t.name === teamName);
+    if (!team) return null;
+    // Return DraftKings username (shown in matchups per user request)
+    return (window._claimUsernames && window._claimUsernames[team.id]) || null;
+  }
+
+  function populateWeekFilter(keepWeek) {
+    const weeks = [...new Set(window._matchups.map(m => Number(m.week)))].sort((a, b) => a - b);
+    const sel   = document.getElementById('matchups-week-filter');
+    sel.innerHTML = '';
+
+    if (weeks.length === 0) {
+      sel.innerHTML = '<option value="">No matchups yet</option>';
+      return;
+    }
+
+    weeks.forEach(w => {
+      const opt       = document.createElement('option');
+      opt.value       = w;
+      opt.textContent = 'Week ' + w;
+      sel.appendChild(opt);
+    });
+
+    sel.value = (keepWeek && weeks.includes(Number(keepWeek))) ? keepWeek : weeks[weeks.length - 1];
+  }
+
+  function renderMatchups() {
+    const sel     = document.getElementById('matchups-week-filter');
+    const selWeek = Number(sel.value);
+    const grid    = document.getElementById('matchups-grid');
+    const empty   = document.getElementById('matchups-empty');
+    const week    = window._matchups.filter(m => Number(m.week) === selWeek);
+
+    Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
+    empty.style.display = week.length === 0 ? 'block' : 'none';
+
+    week.forEach((m, i) => {
+      const played   = m.homeScore !== null && m.awayScore !== null;
+      const homeWins = played && m.homeScore > m.awayScore;
+      const awayWins = played && m.awayScore > m.homeScore;
+
+      const homeAbbr  = TEAM_ABBR[m.homeTeam] || m.homeTeam;
+      const awayAbbr  = TEAM_ABBR[m.awayTeam] || m.awayTeam;
+      const homeDK    = getPlayerForTeam(m.homeTeam);
+      const awayDK    = getPlayerForTeam(m.awayTeam);
+      const homeLabel = homeDK ? `${homeAbbr} <span class="matchup-player">- ${escHtml(homeDK)}</span>` : homeAbbr;
+      const awayLabel = awayDK ? `${awayAbbr} <span class="matchup-player">- ${escHtml(awayDK)}</span>` : awayAbbr;
+
+      const card = document.createElement('div');
+      card.className = 'matchup-card';
+      card.innerHTML = `
+        <div class="matchup-card-header">Week ${m.week} · Game ${i + 1}</div>
+        <div class="matchup-body">
+          <div class="matchup-team">
+            <div class="matchup-team-name ${played ? (homeWins ? 'winner' : 'loser') : ''}">
+              ${homeLabel}
+            </div>
+          </div>
+          <div class="matchup-score-wrap">
+            ${played
+              ? `<div class="matchup-score-nums">
+                   <span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span>
+                   <span class="matchup-score-sep">–</span>
+                   <span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span>
+                 </div>
+                 <div class="matchup-final-label">Final</div>`
+              : `<div class="matchup-score upcoming">VS</div>`
+            }
+          </div>
+          <div class="matchup-team">
+            <div class="matchup-team-name ${played ? (awayWins ? 'winner' : 'loser') : ''}">
+              ${awayLabel}
+            </div>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  async function refreshMatchups() {
+    const prevWeek = document.getElementById('matchups-week-filter').value;
+    await loadClaims();
+    window._matchups = await loadMatchups();
+    populateWeekFilter(prevWeek);
+    renderMatchups();
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────
+  async function boot() {
+    await loadClaims();
+    window._matchups = await loadMatchups();
+    populateWeekFilter();
+    renderMatchups();
+  }
+
+  boot();
+</script>
+</body>
+</html>
