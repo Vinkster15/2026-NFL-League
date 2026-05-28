@@ -157,102 +157,113 @@
     }
     .btn-refresh:hover { background: var(--accent); color: #000; }
 
-    .matchups-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 16px;
-    }
-    .matchup-card {
+    /* Matchups table box */
+    .matchups-box {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
     }
-    .matchup-card-header {
-      font-size: 10px;
+    .matchups-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+    .matchups-table thead tr {
+      background: var(--surface2);
+      border-bottom: 2px solid var(--accent);
+    }
+    .matchups-table th {
+      padding: 11px 16px;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: .12em;
+      letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 7px 14px;
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-      font-family: var(--font-mono);
-    }
-    .matchup-body {
-      padding: 16px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .matchup-team {
-      flex: 1;
       text-align: center;
     }
-    .matchup-team-name {
-      font-size: 14px;
+    .matchups-table th.col-home,
+    .matchups-table th.col-away { text-align: left; }
+    .matchups-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .matchups-table tr:last-child td { border-bottom: none; }
+    .matchups-table tr:hover td { background: rgba(255,255,255,.025); }
+
+    .td-game {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+      width: 60px;
+    }
+    .td-team {
+      font-size: 15px;
       font-weight: 700;
       color: var(--text);
-      line-height: 1.3;
     }
-    .matchup-team-name.winner { color: var(--green); }
-    .matchup-team-name.loser  { color: var(--muted); }
-    .matchup-player {
-      font-size: 11px;
+    .td-team.winner { color: var(--green); }
+    .td-team.loser  { color: var(--muted); }
+    .td-team .dk-user {
+      font-size: 12px;
       color: var(--accent);
-      font-family: var(--font-mono);
-      margin-top: 3px;
+      font-weight: 500;
+      margin-left: 6px;
     }
-    .matchup-score {
-      font-size: 28px;
+    .td-score {
+      text-align: center;
+      font-size: 18px;
       font-weight: 900;
       color: var(--heading);
-      font-family: var(--font-mono);
-      text-align: center;
-      min-width: 60px;
-      line-height: 1;
+      white-space: nowrap;
+      width: 110px;
     }
-    .matchup-score.upcoming {
-      font-size: 14px;
+    .td-score .vs-label {
+      font-size: 12px;
       font-weight: 700;
       color: var(--muted);
-      letter-spacing: .1em;
+      letter-spacing: .08em;
       text-transform: uppercase;
     }
-    .matchup-score-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      min-width: 70px;
+    .td-score .score-sep { color: var(--muted); margin: 0 4px; font-weight: 400; }
+    .td-status {
+      text-align: center;
+      width: 70px;
     }
-    .matchup-score-nums {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--font-mono);
-      font-size: 26px;
-      font-weight: 900;
-      color: var(--heading);
-    }
-    .matchup-score-sep {
-      font-size: 18px;
-      color: var(--muted);
-      font-weight: 400;
-    }
-    .matchup-final-label {
+    .badge-final {
       font-size: 10px;
       font-weight: 700;
-      letter-spacing: .1em;
+      letter-spacing: .08em;
       text-transform: uppercase;
+      background: rgba(46,204,113,.12);
+      color: var(--green);
+      border: 1px solid rgba(46,204,113,.25);
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+    .badge-upcoming {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: rgba(90,98,112,.12);
       color: var(--muted);
-      font-family: var(--font-mono);
+      border: 1px solid rgba(90,98,112,.25);
+      padding: 2px 8px;
+      border-radius: 2px;
     }
     #matchups-empty {
-      font-family: var(--font-mono);
       font-size: 13px;
       color: var(--muted);
-      padding: 20px 0;
+      padding: 24px 16px;
+    }
+    @media (max-width: 560px) {
+      .matchups-table th.col-status,
+      .matchups-table td.td-status { display: none; }
+      .td-score { font-size: 15px; }
     }
 
     #toast {
@@ -315,8 +326,21 @@
     <button class="btn-refresh" onclick="refreshMatchups()">↻ Refresh</button>
   </div>
 
-  <div class="matchups-grid" id="matchups-grid">
-    <p id="matchups-empty" style="display:none">No matchups found for this week.</p>
+  <div class="matchups-box">
+    <table class="matchups-table" id="matchups-table">
+      <thead>
+        <tr>
+          <th class="col-game">#</th>
+          <th class="col-home">Home</th>
+          <th class="col-score">Score</th>
+          <th class="col-away">Away</th>
+          <th class="col-status">Status</th>
+        </tr>
+      </thead>
+      <tbody id="matchups-tbody">
+        <tr><td colspan="5" id="matchups-empty" class="td-game" style="width:auto;text-align:left;color:var(--muted);font-size:13px">No matchups found for this week.</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -506,54 +530,46 @@
   function renderMatchups() {
     const sel     = document.getElementById('matchups-week-filter');
     const selWeek = Number(sel.value);
-    const grid    = document.getElementById('matchups-grid');
-    const empty   = document.getElementById('matchups-empty');
+    const tbody   = document.getElementById('matchups-tbody');
     const week    = window._matchups.filter(m => Number(m.week) === selWeek);
 
-    Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
-    empty.style.display = week.length === 0 ? 'block' : 'none';
+    tbody.innerHTML = '';
+
+    if (week.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" id="matchups-empty" style="padding:24px 16px;color:var(--muted);font-size:13px">No matchups found for this week.</td></tr>';
+      return;
+    }
 
     week.forEach((m, i) => {
       const played   = m.homeScore !== null && m.awayScore !== null;
       const homeWins = played && m.homeScore > m.awayScore;
       const awayWins = played && m.awayScore > m.homeScore;
 
-      const homeAbbr  = TEAM_ABBR[m.homeTeam] || m.homeTeam;
-      const awayAbbr  = TEAM_ABBR[m.awayTeam] || m.awayTeam;
-      const homeDK    = getPlayerForTeam(m.homeTeam);
-      const awayDK    = getPlayerForTeam(m.awayTeam);
-      const homeLabel = homeDK ? `${homeAbbr} <span class="matchup-player">- ${escHtml(homeDK)}</span>` : homeAbbr;
-      const awayLabel = awayDK ? `${awayAbbr} <span class="matchup-player">- ${escHtml(awayDK)}</span>` : awayAbbr;
+      const homeAbbr = TEAM_ABBR[m.homeTeam] || m.homeTeam;
+      const awayAbbr = TEAM_ABBR[m.awayTeam] || m.awayTeam;
+      const homeDK   = getPlayerForTeam(m.homeTeam);
+      const awayDK   = getPlayerForTeam(m.awayTeam);
 
-      const card = document.createElement('div');
-      card.className = 'matchup-card';
-      card.innerHTML = `
-        <div class="matchup-card-header">Week ${m.week} · Game ${i + 1}</div>
-        <div class="matchup-body">
-          <div class="matchup-team">
-            <div class="matchup-team-name ${played ? (homeWins ? 'winner' : 'loser') : ''}">
-              ${homeLabel}
-            </div>
-          </div>
-          <div class="matchup-score-wrap">
-            ${played
-              ? `<div class="matchup-score-nums">
-                   <span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span>
-                   <span class="matchup-score-sep">–</span>
-                   <span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span>
-                 </div>
-                 <div class="matchup-final-label">Final</div>`
-              : `<div class="matchup-score upcoming">VS</div>`
-            }
-          </div>
-          <div class="matchup-team">
-            <div class="matchup-team-name ${played ? (awayWins ? 'winner' : 'loser') : ''}">
-              ${awayLabel}
-            </div>
-          </div>
-        </div>
+      const homeLabel = `${homeAbbr}${homeDK ? `<span class="dk-user">- ${escHtml(homeDK)}</span>` : ''}`;
+      const awayLabel = `${awayAbbr}${awayDK ? `<span class="dk-user">- ${escHtml(awayDK)}</span>` : ''}`;
+
+      const scoreCell = played
+        ? `<span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span><span class="score-sep">–</span><span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span>`
+        : `<span class="vs-label">VS</span>`;
+
+      const statusCell = played
+        ? `<span class="badge-final">Final</span>`
+        : `<span class="badge-upcoming">TBD</span>`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="td-game">${i + 1}</td>
+        <td class="td-team ${played ? (homeWins ? 'winner' : 'loser') : ''}">${homeLabel}</td>
+        <td class="td-score">${scoreCell}</td>
+        <td class="td-team ${played ? (awayWins ? 'winner' : 'loser') : ''}">${awayLabel}</td>
+        <td class="td-status">${statusCell}</td>
       `;
-      grid.appendChild(card);
+      tbody.appendChild(tr);
     });
   }
 
