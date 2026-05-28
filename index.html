@@ -705,6 +705,26 @@
 <hr class="divider" />
 
 <!-- ============================================================
+     PAYMENT
+     ============================================================ -->
+<section class="section container" id="payment">
+  <h2 class="block-heading">Entry Fee</h2>
+  <p style="color:var(--text-dim);font-size:15px;max-width:560px;margin-bottom:24px">
+    Send the <strong style="color:var(--accent)">$125 entry fee</strong> to one of the following options:
+  </p>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;max-width:360px;font-size:15px;line-height:2.2">
+    <div><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">Venmo</span><br><strong style="color:var(--accent)">@Vinkster15</strong></div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px"><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">PayPal</span><br><strong style="color:var(--accent)">dustin.vinke@yahoo.com</strong></div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px"><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">Cashapp</span><br><strong style="color:var(--accent)">$DustinVinke</strong></div>
+  </div>
+  <p style="color:var(--text-dim);font-size:15px;max-width:560px;margin-top:20px">
+    Payment deadline: <strong style="color:var(--accent)">Sunday, August 30th</strong>
+  </p>
+</section>
+
+<hr class="divider" />
+
+<!-- ============================================================
      LEAGUE OVERVIEW  (conferences + divisions + teams)
      ============================================================ -->
 <section class="section container" id="league">
@@ -1354,6 +1374,10 @@
     document.getElementById('stat-total').textContent     = total;
     document.getElementById('stat-available').textContent = total - claimed;
     document.getElementById('stat-claimed').textContent   = claimed;
+
+    // Hide the signup section once all teams are claimed
+    const signupSection = document.getElementById('signup');
+    if (signupSection) signupSection.style.display = claimed >= total ? 'none' : '';
 
   }
 
