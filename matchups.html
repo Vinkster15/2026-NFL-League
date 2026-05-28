@@ -229,31 +229,8 @@
       text-transform: uppercase;
     }
     .td-score .score-sep { color: var(--muted); margin: 0 4px; font-weight: 400; }
-    .td-status {
-      text-align: center;
-      width: 70px;
-    }
-    .badge-final {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      background: rgba(46,204,113,.12);
-      color: var(--green);
-      border: 1px solid rgba(46,204,113,.25);
-      padding: 2px 8px;
-      border-radius: 2px;
-    }
-    .badge-upcoming {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      background: rgba(90,98,112,.12);
-      color: var(--muted);
-      border: 1px solid rgba(90,98,112,.25);
-      padding: 2px 8px;
-      border-radius: 2px;
+    .td-home {
+      text-align: right;
     }
     #matchups-empty {
       font-size: 13px;
@@ -261,8 +238,6 @@
       padding: 24px 16px;
     }
     @media (max-width: 560px) {
-      .matchups-table th.col-status,
-      .matchups-table td.td-status { display: none; }
       .td-score { font-size: 15px; }
     }
 
@@ -331,10 +306,9 @@
       <thead>
         <tr>
           <th class="col-game">#</th>
-          <th class="col-home">Home</th>
-          <th class="col-score">Score</th>
           <th class="col-away">Away</th>
-          <th class="col-status">Status</th>
+          <th class="col-score">Score</th>
+          <th class="col-home" style="text-align:right">Home</th>
         </tr>
       </thead>
       <tbody id="matchups-tbody">
@@ -550,24 +524,24 @@
       const homeDK   = getPlayerForTeam(m.homeTeam);
       const awayDK   = getPlayerForTeam(m.awayTeam);
 
-      const homeLabel = `${homeAbbr}${homeDK ? `<span class="dk-user">- ${escHtml(homeDK)}</span>` : ''}`;
-      const awayLabel = `${awayAbbr}${awayDK ? `<span class="dk-user">- ${escHtml(awayDK)}</span>` : ''}`;
+      // Away: CAR - vinkster15 / Home: vinkster15 - CAR
+      const awayLabel = awayDK
+        ? `${awayAbbr}<span class="dk-user">- ${escHtml(awayDK)}</span>`
+        : awayAbbr;
+      const homeLabel = homeDK
+        ? `<span class="dk-user">${escHtml(homeDK)} -</span>${homeAbbr}`
+        : homeAbbr;
 
       const scoreCell = played
-        ? `<span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span><span class="score-sep">–</span><span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span>`
+        ? `<span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span><span class="score-sep">–</span><span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span>`
         : `<span class="vs-label">VS</span>`;
-
-      const statusCell = played
-        ? `<span class="badge-final">Final</span>`
-        : `<span class="badge-upcoming">TBD</span>`;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="td-game">${i + 1}</td>
-        <td class="td-team ${played ? (homeWins ? 'winner' : 'loser') : ''}">${homeLabel}</td>
-        <td class="td-score">${scoreCell}</td>
         <td class="td-team ${played ? (awayWins ? 'winner' : 'loser') : ''}">${awayLabel}</td>
-        <td class="td-status">${statusCell}</td>
+        <td class="td-score">${scoreCell}</td>
+        <td class="td-team td-home ${played ? (homeWins ? 'winner' : 'loser') : ''}">${homeLabel}</td>
       `;
       tbody.appendChild(tr);
     });
