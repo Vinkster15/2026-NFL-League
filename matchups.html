@@ -232,6 +232,11 @@
     .td-home {
       text-align: right;
     }
+    .record {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
     #matchups-empty {
       font-size: 13px;
       color: var(--muted);
@@ -412,6 +417,7 @@
 
   // ── Runtime state ──────────────────────────────────────────────
   let claimedTeams = {};
+  let standings = [];
   window._claimUsernames = {};
   window._matchups = [];
 
@@ -458,6 +464,26 @@
     } catch (err) {
       console.warn('loadClaims failed', err);
     }
+  }
+
+  async function loadStandings() {
+    if (!isLive()) return [];
+    try {
+      const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=standings');
+      const data = await res.json();
+      return (data.success && data.standings) ? data.standings : [];
+    } catch (err) {
+      console.warn('loadStandings failed', err);
+      return [];
+    }
+  }
+
+  function getRecordForTeam(teamName) {
+    const team = MOCK_LEAGUE.teams.find(t => t.name === teamName);
+    if (!team) return '';
+    const s = standings.find(x => x.teamId === team.id);
+    if (!s) return '';
+    return `(${s.wins}-${s.losses})`;
   }
 
   async function loadMatchups() {
@@ -524,13 +550,16 @@
       const homeDK   = getPlayerForTeam(m.homeTeam);
       const awayDK   = getPlayerForTeam(m.awayTeam);
 
-      // Away: CAR - vinkster15 / Home: vinkster15 - CAR
+      const homeRecord = getRecordForTeam(m.homeTeam);
+      const awayRecord = getRecordForTeam(m.awayTeam);
+
+      // Away: CAR - vinkster15 (1-0) / Home: (1-0) vinkster15 - CAR
       const awayLabel = awayDK
-        ? `${awayAbbr}<span class="dk-user">- ${escHtml(awayDK)}</span>`
-        : awayAbbr;
+        ? `${awayAbbr} <span class="dk-user">- ${escHtml(awayDK)}</span> <span class="record">${awayRecord}</span>`
+        : `${awayAbbr} <span class="record">${awayRecord}</span>`;
       const homeLabel = homeDK
-        ? `<span class="dk-user">${escHtml(homeDK)} -</span>${homeAbbr}`
-        : homeAbbr;
+        ? `<span class="record">${homeRecord}</span> <span class="dk-user">${escHtml(homeDK)} -</span> ${homeAbbr}`
+        : `<span class="record">${homeRecord}</span> ${homeAbbr}`;
 
       const scoreCell = played
         ? `<span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span><span class="score-sep">–</span><span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span>`
@@ -550,6 +579,7 @@
   async function refreshMatchups() {
     const prevWeek = document.getElementById('matchups-week-filter').value;
     await loadClaims();
+    standings = await loadStandings();
     window._matchups = await loadMatchups();
     populateWeekFilter(prevWeek);
     renderMatchups();
@@ -558,6 +588,7 @@
   // ── Boot ───────────────────────────────────────────────────────
   async function boot() {
     await loadClaims();
+    standings = await loadStandings();
     window._matchups = await loadMatchups();
     populateWeekFilter();
     renderMatchups();
