@@ -466,15 +466,34 @@
     }
   }
 
+  const MOCK_STANDINGS = [
+    { teamId: 't01', wins: 5, losses: 2 }, { teamId: 't02', wins: 4, losses: 3 },
+    { teamId: 't03', wins: 3, losses: 4 }, { teamId: 't04', wins: 1, losses: 6 },
+    { teamId: 't05', wins: 6, losses: 1 }, { teamId: 't06', wins: 4, losses: 3 },
+    { teamId: 't07', wins: 3, losses: 4 }, { teamId: 't08', wins: 2, losses: 5 },
+    { teamId: 't09', wins: 5, losses: 2 }, { teamId: 't10', wins: 5, losses: 2 },
+    { teamId: 't11', wins: 3, losses: 4 }, { teamId: 't12', wins: 2, losses: 5 },
+    { teamId: 't13', wins: 7, losses: 0 }, { teamId: 't14', wins: 4, losses: 3 },
+    { teamId: 't15', wins: 3, losses: 4 }, { teamId: 't16', wins: 0, losses: 7 },
+    { teamId: 't17', wins: 6, losses: 1 }, { teamId: 't18', wins: 5, losses: 2 },
+    { teamId: 't19', wins: 2, losses: 5 }, { teamId: 't20', wins: 1, losses: 6 },
+    { teamId: 't21', wins: 4, losses: 3 }, { teamId: 't22', wins: 4, losses: 3 },
+    { teamId: 't23', wins: 3, losses: 4 }, { teamId: 't24', wins: 3, losses: 4 },
+    { teamId: 't25', wins: 5, losses: 2 }, { teamId: 't26', wins: 4, losses: 3 },
+    { teamId: 't27', wins: 3, losses: 4 }, { teamId: 't28', wins: 2, losses: 5 },
+    { teamId: 't29', wins: 6, losses: 1 }, { teamId: 't30', wins: 4, losses: 3 },
+    { teamId: 't31', wins: 3, losses: 4 }, { teamId: 't32', wins: 1, losses: 6 },
+  ];
+
   async function loadStandings() {
-    if (!isLive()) return [];
+    if (!isLive()) return MOCK_STANDINGS;
     try {
       const res  = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=standings');
       const data = await res.json();
-      return (data.success && data.standings) ? data.standings : [];
+      return (data.success && data.standings && data.standings.length > 0) ? data.standings : MOCK_STANDINGS;
     } catch (err) {
-      console.warn('loadStandings failed', err);
-      return [];
+      console.warn('loadStandings failed, using mock data', err);
+      return MOCK_STANDINGS;
     }
   }
 
