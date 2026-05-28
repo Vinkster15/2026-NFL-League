@@ -205,13 +205,23 @@
       font-weight: 700;
       color: var(--text);
     }
-    .td-team.winner { color: var(--green); }
-    .td-team.loser  { color: var(--muted); }
+    /* Desktop — all inline */
+    .td-team .record,
+    .td-team .dk-user,
+    .td-team .team-abbr {
+      display: inline;
+      line-height: 1.4;
+    }
     .td-team .dk-user {
       font-size: 12px;
       color: var(--accent);
       font-weight: 500;
-      margin-left: 6px;
+      margin: 0 3px;
+    }
+    .td-team .team-abbr {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
     }
     .td-score {
       text-align: center;
@@ -244,18 +254,19 @@
     }
     @media (max-width: 600px) {
       .matchups-box { max-width: 100% !important; }
-      .matchups-table th { padding: 8px 8px; font-size: 10px; }
-      .matchups-table td { padding: 10px 8px; }
-      .td-team { font-size: 13px; }
-      .td-score { font-size: 14px; width: 80px; }
-      .record { font-size: 11px; }
-      /* Drop DK username to its own line on mobile */
-      .dk-user {
+      .matchups-table th { padding: 8px 6px; font-size: 10px; }
+      .matchups-table td { padding: 10px 6px; }
+      .td-score { font-size: 13px; width: 75px; }
+      /* Stack on mobile */
+      .td-team .record,
+      .td-team .dk-user,
+      .td-team .team-abbr {
         display: block;
-        font-size: 10px;
-        margin-left: 0;
-        margin-top: 2px;
+        margin: 0;
       }
+      .td-team .record   { font-size: 10px; }
+      .td-team .dk-user  { font-size: 10px; }
+      .td-team .team-abbr { font-size: 13px; }
     }
 
     #toast {
@@ -599,13 +610,9 @@
       const homeRecord = getRecordForTeam(m.homeTeam);
       const awayRecord = getRecordForTeam(m.awayTeam);
 
-      // Away: CAR - vinkster15 (1-0) / Home: (1-0) vinkster15 - CAR
-      const awayLabel = awayDK
-        ? `${awayAbbr} <span class="dk-user">- ${escHtml(awayDK)}</span> <span class="record">${awayRecord}</span>`
-        : `${awayAbbr} <span class="record">${awayRecord}</span>`;
-      const homeLabel = homeDK
-        ? `<span class="record">${homeRecord}</span> <span class="dk-user">${escHtml(homeDK)} -</span> ${homeAbbr}`
-        : `<span class="record">${homeRecord}</span> ${homeAbbr}`;
+      // Both teams stacked: record / DK username / team abbr (abbr always white)
+      const awayLabel = `<span class="record">${awayRecord}</span><span class="dk-user">${awayDK ? escHtml(awayDK) : ''}</span><span class="team-abbr">${awayAbbr}</span>`;
+      const homeLabel = `<span class="record">${homeRecord}</span><span class="dk-user">${homeDK ? escHtml(homeDK) : ''}</span><span class="team-abbr">${homeAbbr}</span>`;
 
       const scoreCell = played
         ? `<span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span><span class="score-sep">–</span><span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span>`
@@ -613,9 +620,9 @@
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="td-team ${played ? (awayWins ? 'winner' : 'loser') : ''}">${awayLabel}</td>
+        <td class="td-team">${awayLabel}</td>
         <td class="td-score">${scoreCell}</td>
-        <td class="td-team td-home ${played ? (homeWins ? 'winner' : 'loser') : ''}">${homeLabel}</td>
+        <td class="td-team td-home">${homeLabel}</td>
       `;
       tbody.appendChild(tr);
     });
