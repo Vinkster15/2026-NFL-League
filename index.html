@@ -707,15 +707,15 @@
 <!-- ============================================================
      PAYMENT
      ============================================================ -->
-<section class="section container" id="payment">
+<section class="section container" id="payment" style="display:none">
   <h2 class="block-heading">Entry Fee</h2>
   <p style="color:var(--text-dim);font-size:15px;max-width:560px;margin-bottom:24px">
     Send the <strong style="color:var(--accent)">$125 entry fee</strong> to one of the following options:
   </p>
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;max-width:360px;font-size:15px;line-height:2.2">
-    <div><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">Venmo</span><br><strong style="color:var(--accent)">@Vinkster15</strong></div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px"><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">PayPal</span><br><strong style="color:var(--accent)">dustin.vinke@yahoo.com</strong></div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px"><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">Cashapp</span><br><strong style="color:var(--accent)">$DustinVinke</strong></div>
+    <div><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">Venmo</span><br><strong style="color:var(--accent)">@Vinkster15</strong><br><a href="https://venmo.com/u/Vinkster15" target="_blank" style="font-size:13px;font-family:var(--font-mono)">Click here to pay</a></div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px"><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">PayPal</span><br><strong style="color:var(--accent)">dustin.vinke@yahoo.com</strong><br><a href="https://paypal.me/dustinvinke" target="_blank" style="font-size:13px;font-family:var(--font-mono)">Click here to pay</a></div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px"><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">Cashapp</span><br><strong style="color:var(--accent)">$DustinVinke</strong><br><a href="https://cash.app/$DustinVinke" target="_blank" style="font-size:13px;font-family:var(--font-mono)">Click here to pay</a></div>
   </div>
   <p style="color:var(--text-dim);font-size:15px;max-width:560px;margin-top:20px">
     Payment deadline: <strong style="color:var(--accent)">Sunday, August 30th</strong>
@@ -1836,6 +1836,12 @@
     // 7. Update footer link
     document.getElementById('footer-sheet-link').href = GOOGLE_SHEETS_CONFIG.SHEET_PUBLIC_URL;
 
+  }
+
+  // Show payment section only before August 30, 2026
+  if (new Date() < new Date('2026-08-31')) {
+    const ps = document.getElementById('payment');
+    if (ps) ps.style.display = '';
   }
 
   boot();
