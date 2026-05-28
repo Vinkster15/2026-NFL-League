@@ -484,7 +484,7 @@
     if (!allTeamsClaimed()) return null;
     const team = MOCK_LEAGUE.teams.find(t => t.name === teamName);
     if (!team) return null;
-    // Return DraftKings username (shown in matchups per user request)
+    // Return DraftKings username — only visible once all 32 teams are claimed
     return (window._claimUsernames && window._claimUsernames[team.id]) || null;
   }
 
