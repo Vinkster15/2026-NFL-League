@@ -303,14 +303,12 @@
     <select id="matchups-week-filter" onchange="renderMatchups()">
       <option value="">Loading…</option>
     </select>
-    <button class="btn-refresh" onclick="refreshMatchups()">↻ Refresh</button>
   </div>
 
   <div class="matchups-box" style="max-width:780px;margin:0 auto">
     <table class="matchups-table" id="matchups-table">
       <thead>
         <tr>
-          <th class="col-game">#</th>
           <th class="col-away">Away</th>
           <th class="col-score">Score</th>
           <th class="col-home" style="text-align:right">Home</th>
@@ -466,23 +464,40 @@
     }
   }
 
+  // Standings after Week 1 — winners get 1-0, losers get 0-1
   const MOCK_STANDINGS = [
-    { teamId: 't01', wins: 5, losses: 2 }, { teamId: 't02', wins: 4, losses: 3 },
-    { teamId: 't03', wins: 3, losses: 4 }, { teamId: 't04', wins: 1, losses: 6 },
-    { teamId: 't05', wins: 6, losses: 1 }, { teamId: 't06', wins: 4, losses: 3 },
-    { teamId: 't07', wins: 3, losses: 4 }, { teamId: 't08', wins: 2, losses: 5 },
-    { teamId: 't09', wins: 5, losses: 2 }, { teamId: 't10', wins: 5, losses: 2 },
-    { teamId: 't11', wins: 3, losses: 4 }, { teamId: 't12', wins: 2, losses: 5 },
-    { teamId: 't13', wins: 7, losses: 0 }, { teamId: 't14', wins: 4, losses: 3 },
-    { teamId: 't15', wins: 3, losses: 4 }, { teamId: 't16', wins: 0, losses: 7 },
-    { teamId: 't17', wins: 6, losses: 1 }, { teamId: 't18', wins: 5, losses: 2 },
-    { teamId: 't19', wins: 2, losses: 5 }, { teamId: 't20', wins: 1, losses: 6 },
-    { teamId: 't21', wins: 4, losses: 3 }, { teamId: 't22', wins: 4, losses: 3 },
-    { teamId: 't23', wins: 3, losses: 4 }, { teamId: 't24', wins: 3, losses: 4 },
-    { teamId: 't25', wins: 5, losses: 2 }, { teamId: 't26', wins: 4, losses: 3 },
-    { teamId: 't27', wins: 3, losses: 4 }, { teamId: 't28', wins: 2, losses: 5 },
-    { teamId: 't29', wins: 6, losses: 1 }, { teamId: 't30', wins: 4, losses: 3 },
-    { teamId: 't31', wins: 3, losses: 4 }, { teamId: 't32', wins: 1, losses: 6 },
+    { teamId: 't01', wins: 1, losses: 0 }, // Baltimore Ravens — W
+    { teamId: 't02', wins: 0, losses: 1 }, // Cincinnati Bengals — L
+    { teamId: 't03', wins: 1, losses: 0 }, // Cleveland Browns — W
+    { teamId: 't04', wins: 0, losses: 1 }, // Pittsburgh Steelers — L
+    { teamId: 't05', wins: 1, losses: 0 }, // Houston Texans — W
+    { teamId: 't06', wins: 0, losses: 1 }, // Indianapolis Colts — L
+    { teamId: 't07', wins: 1, losses: 0 }, // Jacksonville Jaguars — W
+    { teamId: 't08', wins: 0, losses: 1 }, // Tennessee Titans — L
+    { teamId: 't09', wins: 1, losses: 0 }, // Buffalo Bills — W
+    { teamId: 't10', wins: 0, losses: 1 }, // Miami Dolphins — L
+    { teamId: 't11', wins: 1, losses: 0 }, // New England Patriots — W
+    { teamId: 't12', wins: 0, losses: 1 }, // New York Jets — L
+    { teamId: 't13', wins: 1, losses: 0 }, // Denver Broncos — W
+    { teamId: 't14', wins: 0, losses: 1 }, // Kansas City Chiefs — L
+    { teamId: 't15', wins: 1, losses: 0 }, // Las Vegas Raiders — W
+    { teamId: 't16', wins: 0, losses: 1 }, // Los Angeles Chargers — L
+    { teamId: 't17', wins: 1, losses: 0 }, // Chicago Bears — W
+    { teamId: 't18', wins: 0, losses: 1 }, // Detroit Lions — L
+    { teamId: 't19', wins: 1, losses: 0 }, // Green Bay Packers — W
+    { teamId: 't20', wins: 0, losses: 1 }, // Minnesota Vikings — L
+    { teamId: 't21', wins: 1, losses: 0 }, // Atlanta Falcons — W
+    { teamId: 't22', wins: 0, losses: 1 }, // Carolina Panthers — L
+    { teamId: 't23', wins: 1, losses: 0 }, // New Orleans Saints — W
+    { teamId: 't24', wins: 0, losses: 1 }, // Tampa Bay Buccaneers — L
+    { teamId: 't25', wins: 1, losses: 0 }, // Dallas Cowboys — W
+    { teamId: 't26', wins: 0, losses: 1 }, // New York Giants — L
+    { teamId: 't27', wins: 1, losses: 0 }, // Philadelphia Eagles — W
+    { teamId: 't28', wins: 0, losses: 1 }, // Washington Commanders — L
+    { teamId: 't29', wins: 1, losses: 0 }, // Arizona Cardinals — W
+    { teamId: 't30', wins: 0, losses: 1 }, // Los Angeles Rams — L
+    { teamId: 't31', wins: 1, losses: 0 }, // San Francisco 49ers — W
+    { teamId: 't32', wins: 0, losses: 1 }, // Seattle Seahawks — L
   ];
 
   async function loadStandings() {
@@ -586,7 +601,6 @@
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="td-game">${i + 1}</td>
         <td class="td-team ${played ? (awayWins ? 'winner' : 'loser') : ''}">${awayLabel}</td>
         <td class="td-score">${scoreCell}</td>
         <td class="td-team td-home ${played ? (homeWins ? 'winner' : 'loser') : ''}">${homeLabel}</td>
@@ -605,32 +619,38 @@
   }
 
   // ── MOCK PREVIEW DATA (remove after testing) ──────────────────
+  // Team assignments: t01–t32 mapped to each DK username
   const MOCK_USERNAMES = {
-    't01':'RavensKing','t02':'BengalsBro','t03':'DawgPound',
-    't04':'SteelersFan','t05':'TexansUp','t06':'ColtsPride',
-    't07':'JaxJags','t08':'TitanUp','t09':'BillsMafia',
-    't10':'FinFan','t11':'vinkster15','t12':'JetLife',
-    't13':'BroncosGang','t14':'ChiefsKingdom','t15':'RaiderNation',
-    't16':'ChargersUp','t17':'BearDown','t18':'OnePride',
-    't19':'GoPackGo','t20':'SkolVikes','t21':'RiseUp',
-    't22':'KeepPounding','t23':'WhoDAT','t24':'GoBucs',
-    't25':'CowboysFan','t26':'BigBlue','t27':'FlyEagles',
-    't28':'HTTC','t29':'BirdGang','t30':'RamIt',
-    't31':'49erFaithful','t32':'12thMan',
+    't01':'kswetnam1342', 't02':'Timtim130',       't03':'watz23',
+    't04':'mvinke',       't05':'joe974',           't06':'sgasperson',
+    't07':'HeHateMe14',   't08':'Mattraq1',         't09':'EriksRIX',
+    't10':'mikedrew237',  't11':'fadeintobolivian','t12':'HotUnderDog',
+    't13':'mystichic23',  't14':'scottr85',         't15':'sbmccarn',
+    't16':'tarheelshaggy23','t17':'Vinkster24',     't18':'paulsupple',
+    't19':'johnniefive',  't20':'droid1232',        't21':'vinkster15',
+    't22':'LSUNick413',   't23':'smittyjo5',        't24':'cmbarbee226',
+    't25':'dukedevilsbb','t26':'JottieBucs',       't27':'imrobins',
+    't28':'Jimmyjr54',    't29':'vrr325',           't30':'headsmasher1104',
+    't31':'jerall12000',  't32':'Jsize',
   };
+  // Week 1 matchups using the actual DK scores provided
   const MOCK_MATCHUP_DATA = [
-    { week:1, homeTeam:'Carolina Panthers',    awayTeam:'Kansas City Chiefs',    homeScore:24, awayScore:17 },
-    { week:1, homeTeam:'Buffalo Bills',        awayTeam:'Dallas Cowboys',        homeScore:31, awayScore:28 },
-    { week:1, homeTeam:'Green Bay Packers',    awayTeam:'San Francisco 49ers',   homeScore:14, awayScore:21 },
-    { week:1, homeTeam:'Denver Broncos',       awayTeam:'New England Patriots',  homeScore:27, awayScore:10 },
-    { week:1, homeTeam:'Atlanta Falcons',      awayTeam:'Seattle Seahawks',      homeScore:20, awayScore:13 },
-    { week:1, homeTeam:'Baltimore Ravens',     awayTeam:'Cincinnati Bengals',    homeScore:35, awayScore:30 },
-    { week:1, homeTeam:'Tampa Bay Buccaneers', awayTeam:'New Orleans Saints',    homeScore:17, awayScore:24 },
-    { week:1, homeTeam:'Detroit Lions',        awayTeam:'Chicago Bears',         homeScore:28, awayScore:14 },
-    { week:2, homeTeam:'Kansas City Chiefs',   awayTeam:'Buffalo Bills',         homeScore:null, awayScore:null },
-    { week:2, homeTeam:'Carolina Panthers',    awayTeam:'Denver Broncos',        homeScore:null, awayScore:null },
-    { week:2, homeTeam:'New England Patriots', awayTeam:'New York Jets',         homeScore:null, awayScore:null },
-    { week:2, homeTeam:'San Francisco 49ers',  awayTeam:'Los Angeles Rams',      homeScore:null, awayScore:null },
+    { week:1, homeTeam:'Baltimore Ravens',     awayTeam:'Cincinnati Bengals',    homeScore:203.66, awayScore:177.56 },
+    { week:1, homeTeam:'Cleveland Browns',     awayTeam:'Pittsburgh Steelers',   homeScore:167.10, awayScore:161.20 },
+    { week:1, homeTeam:'Houston Texans',       awayTeam:'Indianapolis Colts',    homeScore:157.44, awayScore:153.92 },
+    { week:1, homeTeam:'Jacksonville Jaguars', awayTeam:'Tennessee Titans',      homeScore:153.12, awayScore:150.84 },
+    { week:1, homeTeam:'Buffalo Bills',        awayTeam:'Miami Dolphins',        homeScore:148.24, awayScore:147.04 },
+    { week:1, homeTeam:'New England Patriots', awayTeam:'New York Jets',         homeScore:146.56, awayScore:144.06 },
+    { week:1, homeTeam:'Denver Broncos',       awayTeam:'Kansas City Chiefs',    homeScore:142.54, awayScore:138.36 },
+    { week:1, homeTeam:'Las Vegas Raiders',    awayTeam:'Los Angeles Chargers',  homeScore:135.72, awayScore:133.40 },
+    { week:1, homeTeam:'Chicago Bears',        awayTeam:'Detroit Lions',         homeScore:132.30, awayScore:131.56 },
+    { week:1, homeTeam:'Green Bay Packers',    awayTeam:'Minnesota Vikings',     homeScore:129.38, awayScore:128.26 },
+    { week:1, homeTeam:'Atlanta Falcons',      awayTeam:'Carolina Panthers',     homeScore:124.16, awayScore:123.14 },
+    { week:1, homeTeam:'New Orleans Saints',   awayTeam:'Tampa Bay Buccaneers',  homeScore:121.32, awayScore:117.16 },
+    { week:1, homeTeam:'Dallas Cowboys',       awayTeam:'New York Giants',       homeScore:114.24, awayScore:108.94 },
+    { week:1, homeTeam:'Philadelphia Eagles',  awayTeam:'Washington Commanders', homeScore:106.26, awayScore:103.76 },
+    { week:1, homeTeam:'Arizona Cardinals',    awayTeam:'Los Angeles Rams',      homeScore:99.06,  awayScore:96.50  },
+    { week:1, homeTeam:'San Francisco 49ers',  awayTeam:'Seattle Seahawks',      homeScore:88.70,  awayScore:68.16  },
   ];
 
   // ── Boot ───────────────────────────────────────────────────────
