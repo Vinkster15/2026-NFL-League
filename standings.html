@@ -225,6 +225,31 @@
     }
     .win-pct { color: var(--accent); }
 
+    /* Conference separator banner */
+    .conf-banner {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .conf-banner:first-child { margin-top: 0; }
+    .conf-banner-label {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--heading);
+      white-space: nowrap;
+    }
+    .conf-banner-label span { color: var(--accent); }
+    .conf-banner-line {
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(to right, var(--accent), transparent);
+      border-radius: 2px;
+    }
+
     #toast {
       position: fixed;
       bottom: 24px;
@@ -273,7 +298,7 @@
 </header>
 
 <section class="hero">
-  <h1>Division <span>Standings</span></h1>
+  <h1>League <span>Standings</span></h1>
 </section>
 
 <section class="section container" id="standings">
@@ -314,6 +339,7 @@
       { id: 'afc', name: 'AFC', fullName: 'American Football Conference' },
       { id: 'nfc', name: 'NFC', fullName: 'National Football Conference' },
     ],
+
     divisions: [
       { id: 'afc-north', confId: 'afc', name: 'North' },
       { id: 'afc-south', confId: 'afc', name: 'South' },
@@ -506,9 +532,24 @@
       ? leagueData.divisions
       : leagueData.divisions.filter(d => d.id === selectedDiv);
 
+    // Group by conference so we can insert banners between AFC and NFC
+    let lastConfId = null;
+
     for (const div of divisions) {
       const conf  = leagueData.conferences.find(c => c.id === div.confId);
       const teams = leagueData.teams.filter(t => t.divId === div.id);
+
+      // Insert a conference banner whenever we enter a new conference
+      if (conf.id !== lastConfId) {
+        lastConfId = conf.id;
+        const banner = document.createElement('div');
+        banner.className = 'conf-banner';
+        banner.innerHTML = `
+          <div class="conf-banner-label">${conf.name} <span>— ${conf.fullName}</span></div>
+          <div class="conf-banner-line"></div>
+        `;
+        grid.appendChild(banner);
+      }
 
       const rows = teams.map(team => {
         const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
