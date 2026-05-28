@@ -672,7 +672,6 @@
      ============================================================ -->
 <section class="hero">
   <h1>2026 <span>NFL</span> League</h1>
-  <p id="hero-sub">Season 1 · Claim your team · Compete weekly</p>
   <div class="stat-row">
     <div class="stat-box">
       <div class="num" id="stat-total">32</div>
@@ -1356,13 +1355,6 @@
     document.getElementById('stat-available').textContent = total - claimed;
     document.getElementById('stat-claimed').textContent   = claimed;
 
-    // Show/hide the anonymous mode notice
-    const sub = document.getElementById('hero-sub');
-    if (sub) {
-      sub.textContent = claimed >= total
-        ? 'Season 1 · All teams claimed · identities revealed!'
-        : `Season 1 · Claim your team · Identities hidden until all ${total} teams are claimed`;
-    }
   }
 
   // =============================================================
@@ -1820,11 +1812,6 @@
     // 7. Update footer link
     document.getElementById('footer-sheet-link').href = GOOGLE_SHEETS_CONFIG.SHEET_PUBLIC_URL;
 
-    // 7. Show a subtle indicator if running in offline/local mode
-    if (!isLive()) {
-      const sub = document.getElementById('hero-sub');
-      if (sub) sub.textContent += ' · Local mode — claims not shared across devices';
-    }
   }
 
   boot();
