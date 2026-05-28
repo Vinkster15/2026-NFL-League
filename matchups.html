@@ -641,9 +641,9 @@
 
     // ── MOCK OVERRIDE (remove after testing) ──
     window._claimUsernames = MOCK_USERNAMES;
-    // Force all 32 claimed so DK usernames show
     MOCK_LEAGUE.teams.forEach(t => { claimedTeams[t.id] = 'MockPlayer'; });
-    if (window._matchups.length === 0) window._matchups = MOCK_MATCHUP_DATA;
+    window._matchups = MOCK_MATCHUP_DATA;
+    standings = MOCK_STANDINGS;
     // ──────────────────────────────────────────
 
     populateWeekFilter();
