@@ -1736,11 +1736,16 @@
     empty.style.display = week.length === 0 ? 'block' : 'none';
 
     week.forEach((m, i) => {
-      const played     = m.homeScore !== null && m.awayScore !== null;
-      const homeWins   = played && m.homeScore > m.awayScore;
-      const awayWins   = played && m.awayScore > m.homeScore;
-      const homePlayer = getPlayerForTeam(m.homeTeam);
-      const awayPlayer = getPlayerForTeam(m.awayTeam);
+      const played    = m.homeScore !== null && m.awayScore !== null;
+      const homeWins  = played && m.homeScore > m.awayScore;
+      const awayWins  = played && m.awayScore > m.homeScore;
+
+      const homeAbbr  = TEAM_ABBR[m.homeTeam] || m.homeTeam;
+      const awayAbbr  = TEAM_ABBR[m.awayTeam] || m.awayTeam;
+      const homeDK    = getPlayerForTeam(m.homeTeam);
+      const awayDK    = getPlayerForTeam(m.awayTeam);
+      const homeLabel = homeDK ? `${homeAbbr} <span class="matchup-player">- ${escHtml(homeDK)}</span>` : homeAbbr;
+      const awayLabel = awayDK ? `${awayAbbr} <span class="matchup-player">- ${escHtml(awayDK)}</span>` : awayAbbr;
 
       const card = document.createElement('div');
       card.className = 'matchup-card';
@@ -1749,9 +1754,8 @@
         <div class="matchup-body">
           <div class="matchup-team">
             <div class="matchup-team-name ${played ? (homeWins ? 'winner' : 'loser') : ''}">
-              ${escHtml(m.homeTeam)}
+              ${homeLabel}
             </div>
-            ${homePlayer ? `<div class="matchup-player">${escHtml(homePlayer)}</div>` : ''}
           </div>
           <div class="matchup-score-wrap">
             ${played
@@ -1766,9 +1770,8 @@
           </div>
           <div class="matchup-team">
             <div class="matchup-team-name ${played ? (awayWins ? 'winner' : 'loser') : ''}">
-              ${escHtml(m.awayTeam)}
+              ${awayLabel}
             </div>
-            ${awayPlayer ? `<div class="matchup-player">${escHtml(awayPlayer)}</div>` : ''}
           </div>
         </div>
       `;
