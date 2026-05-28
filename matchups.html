@@ -604,11 +604,48 @@
     renderMatchups();
   }
 
+  // ── MOCK PREVIEW DATA (remove after testing) ──────────────────
+  const MOCK_USERNAMES = {
+    't01':'RavensKing','t02':'BengalsBro','t03':'DawgPound',
+    't04':'SteelersFan','t05':'TexansUp','t06':'ColtsPride',
+    't07':'JaxJags','t08':'TitanUp','t09':'BillsMafia',
+    't10':'FinFan','t11':'vinkster15','t12':'JetLife',
+    't13':'BroncosGang','t14':'ChiefsKingdom','t15':'RaiderNation',
+    't16':'ChargersUp','t17':'BearDown','t18':'OnePride',
+    't19':'GoPackGo','t20':'SkolVikes','t21':'RiseUp',
+    't22':'KeepPounding','t23':'WhoDAT','t24':'GoBucs',
+    't25':'CowboysFan','t26':'BigBlue','t27':'FlyEagles',
+    't28':'HTTC','t29':'BirdGang','t30':'RamIt',
+    't31':'49erFaithful','t32':'12thMan',
+  };
+  const MOCK_MATCHUP_DATA = [
+    { week:1, homeTeam:'Carolina Panthers',    awayTeam:'Kansas City Chiefs',    homeScore:24, awayScore:17 },
+    { week:1, homeTeam:'Buffalo Bills',        awayTeam:'Dallas Cowboys',        homeScore:31, awayScore:28 },
+    { week:1, homeTeam:'Green Bay Packers',    awayTeam:'San Francisco 49ers',   homeScore:14, awayScore:21 },
+    { week:1, homeTeam:'Denver Broncos',       awayTeam:'New England Patriots',  homeScore:27, awayScore:10 },
+    { week:1, homeTeam:'Atlanta Falcons',      awayTeam:'Seattle Seahawks',      homeScore:20, awayScore:13 },
+    { week:1, homeTeam:'Baltimore Ravens',     awayTeam:'Cincinnati Bengals',    homeScore:35, awayScore:30 },
+    { week:1, homeTeam:'Tampa Bay Buccaneers', awayTeam:'New Orleans Saints',    homeScore:17, awayScore:24 },
+    { week:1, homeTeam:'Detroit Lions',        awayTeam:'Chicago Bears',         homeScore:28, awayScore:14 },
+    { week:2, homeTeam:'Kansas City Chiefs',   awayTeam:'Buffalo Bills',         homeScore:null, awayScore:null },
+    { week:2, homeTeam:'Carolina Panthers',    awayTeam:'Denver Broncos',        homeScore:null, awayScore:null },
+    { week:2, homeTeam:'New England Patriots', awayTeam:'New York Jets',         homeScore:null, awayScore:null },
+    { week:2, homeTeam:'San Francisco 49ers',  awayTeam:'Los Angeles Rams',      homeScore:null, awayScore:null },
+  ];
+
   // ── Boot ───────────────────────────────────────────────────────
   async function boot() {
     await loadClaims();
     standings = await loadStandings();
     window._matchups = await loadMatchups();
+
+    // ── MOCK OVERRIDE (remove after testing) ──
+    window._claimUsernames = MOCK_USERNAMES;
+    // Force all 32 claimed so DK usernames show
+    MOCK_LEAGUE.teams.forEach(t => { claimedTeams[t.id] = 'MockPlayer'; });
+    if (window._matchups.length === 0) window._matchups = MOCK_MATCHUP_DATA;
+    // ──────────────────────────────────────────
+
     populateWeekFilter();
     renderMatchups();
   }
