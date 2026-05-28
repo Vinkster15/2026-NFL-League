@@ -243,22 +243,14 @@
       padding: 24px 16px;
     }
     @media (max-width: 600px) {
-      /* Stack each matchup row vertically on mobile */
-      .matchups-table thead { display: none; }
-      .matchups-table tbody tr {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 14px 12px;
-        border-bottom: 1px solid var(--border);
-        gap: 6px;
-      }
-      .matchups-table tbody tr:last-child { border-bottom: none; }
-      .matchups-table td { padding: 0; border: none; width: 100%; text-align: center; }
-      .td-team { text-align: center !important; font-size: 14px; }
-      .td-score { font-size: 20px; padding: 4px 0; }
-      .td-home { text-align: center !important; }
       .matchups-box { max-width: 100% !important; }
+      .matchups-table { font-size: 11px; }
+      .matchups-table th { padding: 8px 6px; font-size: 10px; }
+      .matchups-table td { padding: 8px 6px; }
+      .td-team { font-size: 11px; }
+      .td-score { font-size: 13px; width: 70px; }
+      .dk-user { font-size: 10px; }
+      .record { font-size: 10px; }
     }
 
     #toast {
