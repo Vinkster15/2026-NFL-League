@@ -244,13 +244,18 @@
     }
     @media (max-width: 600px) {
       .matchups-box { max-width: 100% !important; }
-      .matchups-table { font-size: 11px; }
-      .matchups-table th { padding: 8px 6px; font-size: 10px; }
-      .matchups-table td { padding: 8px 6px; }
-      .td-team { font-size: 11px; }
-      .td-score { font-size: 13px; width: 70px; }
-      .dk-user { font-size: 10px; }
-      .record { font-size: 10px; }
+      .matchups-table th { padding: 8px 8px; font-size: 10px; }
+      .matchups-table td { padding: 10px 8px; }
+      .td-team { font-size: 13px; }
+      .td-score { font-size: 14px; width: 80px; }
+      .record { font-size: 11px; }
+      /* Drop DK username to its own line on mobile */
+      .dk-user {
+        display: block;
+        font-size: 10px;
+        margin-left: 0;
+        margin-top: 2px;
+      }
     }
 
     #toast {
