@@ -268,9 +268,14 @@
         display: block;
         margin: 0;
       }
-      .td-team .record   { font-size: 10px; }
-      .td-team .dk-user  { font-size: 10px; }
+      .td-team .record    { font-size: 10px; }
+      .td-team .dk-user   { font-size: 10px; }
       .td-team .team-abbr { font-size: 13px; }
+      /* Reorder away cell on mobile: record → dk → abbr */
+      .td-away { display: flex; flex-direction: column; }
+      .td-away .team-abbr { order: 3; }
+      .td-away .dk-user   { order: 2; }
+      .td-away .record    { order: 1; }
     }
 
     #toast {
@@ -613,8 +618,8 @@
       const homeRecord = getRecordForTeam(m.homeTeam);
       const awayRecord = getRecordForTeam(m.awayTeam);
 
-      // Both teams stacked: record / DK username / team abbr (abbr always white)
-      const awayLabel = `<span class="record">${awayRecord}</span><span class="dk-user">${awayDK ? escHtml(awayDK) : ''}</span><span class="team-abbr">${awayAbbr}</span>`;
+      // Away desktop: abbr | dk | record  — mobile reordered via CSS flexbox
+      const awayLabel = `<span class="team-abbr">${awayAbbr}</span><span class="dk-user">${awayDK ? escHtml(awayDK) : ''}</span><span class="record">${awayRecord}</span>`;
       const homeLabel = `<span class="record">${homeRecord}</span><span class="dk-user">${homeDK ? escHtml(homeDK) : ''}</span><span class="team-abbr">${homeAbbr}</span>`;
 
       const scoreCell = played
@@ -623,7 +628,7 @@
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="td-team">${awayLabel}</td>
+        <td class="td-team td-away">${awayLabel}</td>
         <td class="td-score">${scoreCell}</td>
         <td class="td-team td-home">${homeLabel}</td>
       `;
