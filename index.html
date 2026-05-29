@@ -91,6 +91,7 @@
     @media (max-width: 480px) {
       .logo { font-size: 15px; }
       nav a { font-size: 12px; padding: 6px 7px; }
+      .nav-league { display: none; }
     }
     nav a {
       font-size: 13px;
@@ -144,13 +145,13 @@
       text-align: center;
     }
     .stat-box .num {
-      font-size: 36px;
+      font-size: 24px;
       font-weight: 900;
       color: var(--accent);
       line-height: 1;
     }
     .stat-box .lbl {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       letter-spacing: .1em;
       text-transform: uppercase;
@@ -663,7 +664,7 @@
     <div class="logo">2026 <span>NFL</span> League</div>
     <nav>
       <a href="#league">Signup</a>
-      <a href="#league">League</a>
+      <a href="#league" class="nav-league">League</a>
       <a href="standings.html">Standings</a>
       <a href="matchups.html">Matchups</a>
     </nav>
@@ -675,6 +676,7 @@
      ============================================================ -->
 <section class="hero">
   <h1>2026 <span>NFL</span> League</h1>
+  <a href="payment.html" style="display:inline-block;margin-bottom:24px;font-size:20px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:2px solid var(--accent);padding:8px 24px;border-radius:var(--radius);text-decoration:none;transition:background .15s,color .15s" onmouseover="this.style.background='var(--accent)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">💰 Payment Info</a>
   <div class="stat-row">
     <div class="stat-box">
       <div class="num" id="stat-total">32</div>
@@ -705,27 +707,6 @@
   </p>
 </section>
 
-<hr class="divider" />
-
-<!-- ============================================================
-     PAYMENT
-     ============================================================ -->
-<section class="section container" id="payment" style="display:none">
-  <h2 class="block-heading">Entry Fee</h2>
-  <p style="color:var(--text-dim);font-size:15px;max-width:560px;margin-bottom:24px">
-    Send the <strong style="color:var(--accent)">$125 entry fee</strong> to one of the following options:
-  </p>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;max-width:360px;font-size:15px;line-height:2.2">
-    <div><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">Venmo</span><br><strong style="color:var(--accent)">@Vinkster15</strong><br><a href="https://venmo.com/u/Vinkster15" target="_blank" style="font-size:13px;font-family:var(--font-mono)">Click here to pay</a></div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px"><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">PayPal</span><br><strong style="color:var(--accent)">dustin.vinke@yahoo.com</strong><br><a href="https://paypal.me/dustinvinke" target="_blank" style="font-size:13px;font-family:var(--font-mono)">Click here to pay</a></div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px"><span style="color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase">Cashapp</span><br><strong style="color:var(--accent)">$DustinVinke</strong><br><a href="https://cash.app/$DustinVinke" target="_blank" style="font-size:13px;font-family:var(--font-mono)">Click here to pay</a></div>
-  </div>
-  <p style="color:var(--text-dim);font-size:19px;max-width:560px;margin-top:20px">
-    Payment deadline: <strong style="color:var(--accent)">Sunday, August 30th</strong>
-  </p>
-</section>
-
-<hr class="divider" />
 
 <!-- ============================================================
      LEAGUE OVERVIEW  (conferences + divisions + teams)
@@ -1557,11 +1538,6 @@
     document.getElementById('footer-sheet-link').href = GOOGLE_SHEETS_CONFIG.SHEET_PUBLIC_URL;
   }
 
-  // Show payment section only before August 30, 2026
-  if (new Date() < new Date('2026-08-31')) {
-    const ps = document.getElementById('payment');
-    if (ps) ps.style.display = '';
-  }
 
   boot();
 
