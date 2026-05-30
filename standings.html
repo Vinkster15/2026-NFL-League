@@ -168,7 +168,7 @@
 
     .standings-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
       gap: 16px;
     }
     .standings-card {
@@ -642,7 +642,7 @@
 
     } else if (currentView === 'division') {
       // One card per division with AFC/NFC banners
-      grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
+      grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(380px, 1fr))';
       grid.style.maxWidth = '';
       grid.style.margin = '';
       let lastConfId = null;
