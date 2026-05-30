@@ -308,6 +308,14 @@
       color: #000;
       border-color: var(--accent);
     }
+
+    /* Conference colors */
+    .conf-afc { color: #c0392b !important; }
+    .conf-nfc { color: #1a5276 !important; }
+    .conf-banner-label.conf-afc span { color: #c0392b; }
+    .conf-banner-label.conf-nfc span { color: #1a5276; }
+    .standings-card-header.conf-afc { color: #c0392b; }
+    .standings-card-header.conf-nfc { color: #1a5276; }
   </style>
 </head>
 <body>
@@ -554,7 +562,11 @@
   }
 
   // ── Shared: build a table card ─────────────────────────────────
-  function buildCard(headerText, teams, standings) {
+  function confClass(confId) {
+    return confId === 'afc' ? 'conf-afc' : 'conf-nfc';
+  }
+
+  function buildCard(headerText, teams, standings, confId) {
     const rows = teams.map(team => {
       const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0, divWins: 0, divLosses: 0, confWins: 0, confLosses: 0 };
       const played = s.wins + s.losses;
@@ -574,7 +586,7 @@
     const card = document.createElement('div');
     card.className = 'standings-card';
     card.innerHTML = `
-      <div class="standings-card-header">${headerText}</div>
+      <div class="standings-card-header ${confId ? confClass(confId) : ''}">${headerText}</div>
       <table class="standings-table">
         <thead><tr><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>DIV</th><th>CONF</th></tr></thead>
         <tbody>
@@ -606,7 +618,7 @@
       grid.style.gridTemplateColumns = '1fr';
       grid.style.maxWidth = '75%';
       grid.style.margin = '0 auto';
-      grid.appendChild(buildCard('Overall League Standings', leagueData.teams, standings));
+      grid.appendChild(buildCard('Overall League Standings', leagueData.teams, standings, null));
 
     } else if (currentView === 'conference') {
       // One card per conference (AFC / NFC) — full width, stacked
@@ -620,9 +632,9 @@
         });
         const banner = document.createElement('div');
         banner.className = 'conf-banner';
-        banner.innerHTML = `<div class="conf-banner-label">${conf.name} <span>— ${conf.fullName}</span></div><div class="conf-banner-line"></div>`;
+        banner.innerHTML = `<div class="conf-banner-label ${confClass(conf.id)}">${conf.name}</div><div class="conf-banner-line"></div>`;
         grid.appendChild(banner);
-        grid.appendChild(buildCard(`${conf.name} — ${conf.fullName}`, teams, standings));
+        grid.appendChild(buildCard(conf.name, teams, standings, conf.id));
       }
 
     } else if (currentView === 'division') {
@@ -637,11 +649,11 @@
           lastConfId = conf.id;
           const banner = document.createElement('div');
           banner.className = 'conf-banner';
-          banner.innerHTML = `<div class="conf-banner-label">${conf.name} <span>— ${conf.fullName}</span></div><div class="conf-banner-line"></div>`;
+          banner.innerHTML = `<div class="conf-banner-label ${confClass(conf.id)}">${conf.name}</div><div class="conf-banner-line"></div>`;
           grid.appendChild(banner);
         }
         const teams = leagueData.teams.filter(t => t.divId === div.id);
-        grid.appendChild(buildCard(`${conf.name} ${div.name}`, teams, standings));
+        grid.appendChild(buildCard(`${conf.name} ${div.name}`, teams, standings, conf.id));
       }
     }
   }
