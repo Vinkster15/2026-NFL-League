@@ -605,8 +605,8 @@
       grid.appendChild(buildCard('Overall League Standings', leagueData.teams, standings));
 
     } else if (currentView === 'conference') {
-      // One card per conference (AFC / NFC) — side by side, full width
-      grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+      // One card per conference (AFC / NFC) — full width, stacked
+      grid.style.gridTemplateColumns = '1fr';
       for (const conf of leagueData.conferences) {
         const teams = leagueData.teams.filter(t => {
           const div = leagueData.divisions.find(d => d.id === t.divId);
