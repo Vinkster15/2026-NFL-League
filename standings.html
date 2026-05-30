@@ -662,12 +662,33 @@
     }
   }
 
+  // ── MOCK PREVIEW DATA (remove after testing) ──────────────────
+  const MOCK_USERNAMES = {
+    't01':'kswetnam1342', 't02':'Timtim130',        't03':'watz23',
+    't04':'mvinke',       't05':'joe974',            't06':'sgasperson',
+    't07':'HeHateMe14',   't08':'Mattraq1',          't09':'EriksRIX',
+    't10':'mikedrew237',  't11':'fadeintobolivian',  't12':'HotUnderDog',
+    't13':'mystichic23',  't14':'scottr85',          't15':'sbmccarn',
+    't16':'tarheelshaggy23','t17':'Vinkster24',      't18':'paulsupple',
+    't19':'johnniefive',  't20':'droid1232',         't21':'vinkster15',
+    't22':'LSUNick413',   't23':'smittyjo5',         't24':'cmbarbee226',
+    't25':'dukedevilsbb', 't26':'JottieBucs',        't27':'imrobins',
+    't28':'Jimmyjr54',    't29':'vrr325',            't30':'headsmasher1104',
+    't31':'jerall12000',  't32':'Jsize',
+  };
+
   // ── Boot ───────────────────────────────────────────────────────
   async function boot() {
     leagueData = MOCK_LEAGUE;
     await loadClaims();
     const standings = await loadStandings();
     leagueData.standings = standings;
+
+    // ── MOCK OVERRIDE (remove after testing) ──
+    window._claimUsernames = MOCK_USERNAMES;
+    MOCK_LEAGUE.teams.forEach(t => { claimedTeams[t.id] = 'MockPlayer'; });
+    // ──────────────────────────────────────────
+
     renderStandings(leagueData.standings);
   }
 
