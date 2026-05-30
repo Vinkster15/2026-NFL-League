@@ -281,6 +281,33 @@
     footer a { color: var(--muted); text-decoration: underline; }
 
     .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* View tabs */
+    .view-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+    .view-tab {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 8px 20px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .view-tab:hover { border-color: var(--accent); color: var(--accent); }
+    .view-tab.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
   </style>
 </head>
 <body>
@@ -303,10 +330,10 @@
   <p class="section-title">Weekly Standings</p>
   <h2 class="block-heading">League Standings</h2>
 
-  <div class="standings-controls">
-    <select id="standings-filter">
-      <option value="all">All Divisions</option>
-    </select>
+  <div class="view-tabs">
+    <button class="view-tab active" onclick="switchView('league', this)">League</button>
+    <button class="view-tab" onclick="switchView('conference', this)">Conference</button>
+    <button class="view-tab" onclick="switchView('division', this)">Division</button>
   </div>
 
   <div class="standings-grid" id="standings-grid">
@@ -516,102 +543,93 @@
     return MOCK_LEAGUE.standings;
   }
 
+  // ── Current view ───────────────────────────────────────────────
+  let currentView = 'league';
+
+  function switchView(view, btn) {
+    currentView = view;
+    document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderStandings(leagueData.standings);
+  }
+
+  // ── Shared: build a table card ─────────────────────────────────
+  function buildCard(headerText, teams, standings) {
+    const rows = teams.map(team => {
+      const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
+      const played = s.wins + s.losses;
+      const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
+      const abbr = TEAM_ABBR[team.name] || team.name;
+      const dk   = allTeamsClaimed() && window._claimUsernames && window._claimUsernames[team.id];
+      const displayName = dk
+        ? `${abbr} <span style="color:var(--accent);font-size:11px">[${escHtml(dk)}]</span>`
+        : abbr;
+      return { wins: s.wins, losses: s.losses, pct, displayName };
+    }).sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+
+    const card = document.createElement('div');
+    card.className = 'standings-card';
+    card.innerHTML = `
+      <div class="standings-card-header">${headerText}</div>
+      <table class="standings-table">
+        <thead><tr><th>Team</th><th>W</th><th>L</th><th>PCT</th></tr></thead>
+        <tbody>
+          ${rows.map((r, i) => `
+            <tr>
+              <td><span class="rank-num">${i + 1}</span>${r.displayName}</td>
+              <td>${r.wins}</td>
+              <td>${r.losses}</td>
+              <td class="win-pct">${r.pct}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    return card;
+  }
+
   // ── Render ─────────────────────────────────────────────────────
   function renderStandings(standings) {
     const grid = document.getElementById('standings-grid');
-    const filter = document.getElementById('standings-filter');
-    const selectedDiv = filter.value;
-
     grid.innerHTML = '';
 
-    const divisions = selectedDiv === 'all'
-      ? leagueData.divisions
-      : leagueData.divisions.filter(d => d.id === selectedDiv);
+    if (currentView === 'league') {
+      // All 32 teams in one table, sorted by wins
+      grid.style.gridTemplateColumns = '1fr';
+      grid.appendChild(buildCard('Overall League Standings', leagueData.teams, standings));
 
-    // Group by conference so we can insert banners between AFC and NFC
-    let lastConfId = null;
-
-    for (const div of divisions) {
-      const conf  = leagueData.conferences.find(c => c.id === div.confId);
-      const teams = leagueData.teams.filter(t => t.divId === div.id);
-
-      // Insert a conference banner whenever we enter a new conference
-      if (conf.id !== lastConfId) {
-        lastConfId = conf.id;
+    } else if (currentView === 'conference') {
+      // One card per conference (AFC / NFC)
+      grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
+      for (const conf of leagueData.conferences) {
+        const teams = leagueData.teams.filter(t => {
+          const div = leagueData.divisions.find(d => d.id === t.divId);
+          return div && div.confId === conf.id;
+        });
         const banner = document.createElement('div');
         banner.className = 'conf-banner';
-        banner.innerHTML = `
-          <div class="conf-banner-label">${conf.name} <span>— ${conf.fullName}</span></div>
-          <div class="conf-banner-line"></div>
-        `;
+        banner.innerHTML = `<div class="conf-banner-label">${conf.name} <span>— ${conf.fullName}</span></div><div class="conf-banner-line"></div>`;
         grid.appendChild(banner);
+        grid.appendChild(buildCard(`${conf.name} — ${conf.fullName}`, teams, standings));
       }
 
-      const rows = teams.map(team => {
-        const s = standings.find(x => x.teamId === team.id) || { wins: 0, losses: 0 };
-        const played = s.wins + s.losses;
-        const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
-        const abbr = TEAM_ABBR[team.name] || team.name;
-        const dk   = allTeamsClaimed() && window._claimUsernames && window._claimUsernames[team.id];
-        const displayName = dk
-          ? `${abbr} <span style="color:var(--accent);font-size:11px">[${escHtml(dk)}]</span>`
-          : abbr;
-        return { ...s, pct, displayName, wins: s.wins, losses: s.losses };
-      }).sort((a, b) => b.wins - a.wins || a.losses - b.losses);
-
-      const card = document.createElement('div');
-      card.className = 'standings-card';
-      card.innerHTML = `
-        <div class="standings-card-header">${conf.name} ${div.name}</div>
-        <table class="standings-table">
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th>W</th>
-              <th>L</th>
-              <th>PCT</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map((r, i) => `
-              <tr>
-                <td><span class="rank-num">${i + 1}</span>${r.displayName}</td>
-                <td>${r.wins}</td>
-                <td>${r.losses}</td>
-                <td class="win-pct">${r.pct}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-
-      grid.appendChild(card);
-    }
-
-    document.getElementById('refresh-status').textContent =
-      'Last updated: ' + new Date().toLocaleTimeString();
-  }
-
-  function populateStandingsFilter() {
-    const sel = document.getElementById('standings-filter');
-    for (const conf of leagueData.conferences) {
-      const divs = leagueData.divisions.filter(d => d.confId === conf.id);
-      for (const div of divs) {
-        const opt = document.createElement('option');
-        opt.value = div.id;
-        opt.textContent = `${conf.name} ${div.name}`;
-        sel.appendChild(opt);
+    } else if (currentView === 'division') {
+      // One card per division with AFC/NFC banners
+      grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
+      let lastConfId = null;
+      for (const div of leagueData.divisions) {
+        const conf = leagueData.conferences.find(c => c.id === div.confId);
+        if (conf.id !== lastConfId) {
+          lastConfId = conf.id;
+          const banner = document.createElement('div');
+          banner.className = 'conf-banner';
+          banner.innerHTML = `<div class="conf-banner-label">${conf.name} <span>— ${conf.fullName}</span></div><div class="conf-banner-line"></div>`;
+          grid.appendChild(banner);
+        }
+        const teams = leagueData.teams.filter(t => t.divId === div.id);
+        grid.appendChild(buildCard(`${conf.name} ${div.name}`, teams, standings));
       }
     }
-    sel.addEventListener('change', () => renderStandings(leagueData.standings));
-  }
-
-  async function refreshStandings() {
-    document.getElementById('refresh-status').textContent = 'Refreshing…';
-    await loadClaims();
-    const standings = await loadStandings();
-    leagueData.standings = standings;
-    renderStandings(standings);
   }
 
   // ── Boot ───────────────────────────────────────────────────────
@@ -620,7 +638,6 @@
     await loadClaims();
     const standings = await loadStandings();
     leagueData.standings = standings;
-    populateStandingsFilter();
     renderStandings(leagueData.standings);
   }
 
