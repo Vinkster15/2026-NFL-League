@@ -311,13 +311,6 @@
 
     @media (max-width: 600px) {
       #standings-grid { max-width: 100% !important; }
-      /* Hide less critical columns on mobile */
-      .standings-table .col-pct,
-      .standings-table .col-div,
-      .standings-table .col-conf { display: none; }
-      /* Stack DK username below abbr in team cell */
-      .standings-table .team-name-main { display: block; font-weight: 700; }
-      .standings-table .team-dk { display: block; font-size: 10px; color: var(--accent); font-weight: 400; }
     }
 
     /* Conference colors */
@@ -584,9 +577,11 @@
       const pct = played === 0 ? '.000' : (s.wins / played).toFixed(3).replace(/^0/, '');
       const abbr = TEAM_ABBR[team.name] || team.name;
       const dk   = allTeamsClaimed() && window._claimUsernames && window._claimUsernames[team.id];
+      const displayName = dk
+        ? `${abbr} <span style="color:var(--accent);font-size:11px">[${escHtml(dk)}]</span>`
+        : abbr;
       return {
-        wins: s.wins, losses: s.losses, pct,
-        abbr, dk: dk || '',
+        wins: s.wins, losses: s.losses, pct, displayName,
         divWins: s.divWins || 0, divLosses: s.divLosses || 0,
         confWins: s.confWins || 0, confLosses: s.confLosses || 0,
       };
@@ -597,20 +592,16 @@
     card.innerHTML = `
       <div class="standings-card-header ${confId ? confClass(confId) : ''}">${headerText}</div>
       <table class="standings-table">
-        <thead><tr><th>Team</th><th>W</th><th>L</th><th class="col-pct">PCT</th><th class="col-div">DIV</th><th class="col-conf">CONF</th></tr></thead>
+        <thead><tr><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>DIV</th><th>CONF</th></tr></thead>
         <tbody>
           ${rows.map((r, i) => `
             <tr>
-              <td>
-                <span class="rank-num">${i + 1}</span>
-                <span class="team-name-main">${r.abbr}${r.dk ? ` <span style="color:var(--accent);font-size:11px">[${escHtml(r.dk)}]</span>` : ''}</span>
-                ${r.dk ? `<span class="team-dk">${escHtml(r.dk)}</span>` : ''}
-              </td>
+              <td><span class="rank-num">${i + 1}</span>${r.displayName}</td>
               <td>${r.wins}</td>
               <td>${r.losses}</td>
-              <td class="win-pct col-pct">${r.pct}</td>
-              <td class="col-div">${r.divWins}-${r.divLosses}</td>
-              <td class="col-conf">${r.confWins}-${r.confLosses}</td>
+              <td class="win-pct">${r.pct}</td>
+              <td>${r.divWins}-${r.divLosses}</td>
+              <td>${r.confWins}-${r.confLosses}</td>
             </tr>
           `).join('')}
         </tbody>
