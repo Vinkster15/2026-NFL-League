@@ -598,15 +598,21 @@
   function renderStandings(standings) {
     const grid = document.getElementById('standings-grid');
     grid.innerHTML = '';
+    grid.style.maxWidth = '';
+    grid.style.margin = '';
 
     if (currentView === 'league') {
       // All 32 teams in one table, sorted by wins
       grid.style.gridTemplateColumns = '1fr';
+      grid.style.maxWidth = '75%';
+      grid.style.margin = '0 auto';
       grid.appendChild(buildCard('Overall League Standings', leagueData.teams, standings));
 
     } else if (currentView === 'conference') {
       // One card per conference (AFC / NFC) — full width, stacked
       grid.style.gridTemplateColumns = '1fr';
+      grid.style.maxWidth = '75%';
+      grid.style.margin = '0 auto';
       for (const conf of leagueData.conferences) {
         const teams = leagueData.teams.filter(t => {
           const div = leagueData.divisions.find(d => d.id === t.divId);
@@ -622,6 +628,8 @@
     } else if (currentView === 'division') {
       // One card per division with AFC/NFC banners
       grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
+      grid.style.maxWidth = '';
+      grid.style.margin = '';
       let lastConfId = null;
       for (const div of leagueData.divisions) {
         const conf = leagueData.conferences.find(c => c.id === div.confId);
