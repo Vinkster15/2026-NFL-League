@@ -688,6 +688,7 @@
      HERO
      ============================================================ -->
 <section class="hero">
+  <div id="league-status-badge" style="display:inline-block;margin-bottom:16px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:20px;background:rgba(34,197,94,0.15);color:#2ecc71;border:1px solid rgba(34,197,94,0.3);">Registration Open</div>
   <h1>2026 DK <span>NFL</span> League - I</h1>
   <div class="stat-row">
     <div class="stat-box">
@@ -1261,11 +1262,18 @@
     document.getElementById('stat-available').textContent = total - claimed;
     document.getElementById('stat-claimed').textContent   = claimed;
 
-    // Hide the signup section and nav tab once all teams are claimed
+    // Flip status badge and hide signup when all teams are claimed
+    const statusBadge   = document.getElementById('league-status-badge');
     const signupSection = document.getElementById('signup');
     const navSignup     = document.getElementById('nav-signup');
     const mainNav       = document.getElementById('main-nav');
     if (claimed >= total) {
+      if (statusBadge) {
+        statusBadge.textContent = 'League Full';
+        statusBadge.style.background = 'rgba(100,100,100,0.2)';
+        statusBadge.style.color      = '#bbb';
+        statusBadge.style.border     = '1px solid rgba(150,150,150,0.3)';
+      }
       if (signupSection) signupSection.style.display = 'none';
       if (navSignup)     navSignup.style.display     = 'none';
       if (mainNav)       mainNav.classList.remove('nav-has-signup');
