@@ -684,12 +684,14 @@
 
   // Week 1 Thursday = Sept 10, 2026. Each week runs Thu→Wed, switching the next Thursday.
   function getCurrentWeek() {
-    const WEEK1_THU = new Date(2026, 8, 10); // Sept 10, 2026 (months 0-indexed)
+    // Switches to the next week every Wednesday.
+    // Week 1 → Week 2 on Wed Sept 16, Week 3 on Wed Sept 23, etc.
+    const FIRST_SWITCH = new Date(2026, 8, 16); // Wed Sept 16, 2026
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (today < WEEK1_THU) return 1;
-    const days = Math.floor((today - WEEK1_THU) / (1000 * 60 * 60 * 24));
-    return Math.min(Math.floor(days / 7) + 1, 18);
+    if (today < FIRST_SWITCH) return 1;
+    const weeksElapsed = Math.floor((today - FIRST_SWITCH) / (1000 * 60 * 60 * 24 * 7));
+    return Math.min(weeksElapsed + 2, 18);
   }
 
   function populateWeekFilter(keepWeek) {
