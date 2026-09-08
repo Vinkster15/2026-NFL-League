@@ -401,7 +401,41 @@
       color: var(--muted);
     }
     footer a { color: var(--muted); text-decoration: underline; }
-  
+
+    /* ── Bye week box ── */
+    .bye-box {
+      max-width: 780px;
+      margin: 12px auto 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .bye-box-header {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .bye-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .bye-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .bye-pill .bye-user { color: #e8a020; font-weight: 700; }
+    .bye-pill .bye-abbr { color: var(--text-dim); }
+
     /* ── Claim button & Available badge — gold ── */
     .btn-claim { background: #e8a020 !important; color: #000 !important; }
     .btn-claim:hover { background: #c47010 !important; }
@@ -460,6 +494,7 @@
       </tbody>
     </table>
   </div>
+  <div id="bye-box" class="bye-box" style="display:none"></div>
 </section>
 
 <footer>
@@ -726,6 +761,25 @@
     matchRow.classList.toggle('open', !isOpen);
   }
 
+  function renderByeBox(selWeek) {
+    const byeBox = document.getElementById('bye-box');
+    if (!byeBox) return;
+    const weekGames = window._matchups.filter(m => Number(m.week) === selWeek);
+    const playingTeams = new Set();
+    weekGames.forEach(m => { playingTeams.add(m.homeTeam); playingTeams.add(m.awayTeam); });
+    const byeTeams = MOCK_LEAGUE.teams.filter(t => !playingTeams.has(t.name));
+    if (byeTeams.length === 0) { byeBox.style.display = 'none'; return; }
+    const pillsHTML = byeTeams.map(t => {
+      const abbr = TEAM_ABBR[t.name] || t.name;
+      const dk   = allTeamsClaimed() ? (window._claimUsernames[t.id] || null) : null;
+      return dk
+        ? `<div class="bye-pill"><span class="bye-user">${escHtml(dk)}</span> · <span class="bye-abbr">${abbr}</span></div>`
+        : `<div class="bye-pill"><span class="bye-abbr">${abbr}</span></div>`;
+    }).join('');
+    byeBox.innerHTML = `<div class="bye-box-header">Bye Week</div><div class="bye-pills">${pillsHTML}</div>`;
+    byeBox.style.display = 'block';
+  }
+
   function renderMatchups() {
     const sel     = document.getElementById('matchups-week-filter');
     const selWeek = Number(sel.value);
@@ -736,6 +790,7 @@
 
     if (week.length === 0) {
       tbody.innerHTML = '<tr><td colspan="3" style="padding:24px 16px;color:var(--muted);font-size:13px">No matchups found for this week.</td></tr>';
+      renderByeBox(selWeek);
       return;
     }
 
@@ -785,6 +840,8 @@
       `;
       tbody.appendChild(detailTr);
     });
+
+    renderByeBox(selWeek);
   }
 
   async function refreshMatchups() {
