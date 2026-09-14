@@ -535,32 +535,33 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
   }
 
-  // ── Data loading ───────────────────────────────────────────────
-  async function loadClaims() {
-    if (!isLive()) {
-      try { claimedTeams = JSON.parse(localStorage.getItem('gfl_claimed') || '{}');
-            window._claimUsernames = JSON.parse(localStorage.getItem('gfl_usernames') || '{}'); } catch(e){}
-      return;
-    }
+  // ── Bootstrap cache helpers ────────────────────────────────────
+  const _CACHE_KEY = 'gfl_boot';
+  const _CACHE_TTL = 3 * 60 * 1000;
+  function _cacheLoad() {
     try {
-      const d = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=claims').then(r=>r.json());
-      if (d.success) { claimedTeams = d.claims||{}; window._claimUsernames = d.usernames||{}; }
-    } catch(e) { console.warn('loadClaims',e); }
+      const raw = sessionStorage.getItem(_CACHE_KEY);
+      if (!raw) return null;
+      const {ts, data} = JSON.parse(raw);
+      if (Date.now() - ts > _CACHE_TTL) return null;
+      return data;
+    } catch(e) { return null; }
   }
-  async function loadMatchupsData() {
-    if (!isLive()) return [];
-    try {
-      const d = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=matchups').then(r=>r.json());
-      return d.success && d.matchups ? d.matchups : [];
-    } catch(e) { return []; }
+  function _cacheSave(d) {
+    try { sessionStorage.setItem(_CACHE_KEY, JSON.stringify({ts: Date.now(), data: d})); } catch(e){}
   }
-  async function loadStandings() {
-    if (!isLive()) return MOCK_LEAGUE.standings;
-    try {
-      const d = await fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=standings').then(r=>r.json());
-      if (d.success && d.standings && d.standings.length) return d.standings;
-    } catch(e) { console.warn('loadStandings',e); }
-    return MOCK_LEAGUE.standings;
+  function _applyBoot(d) {
+    claimedTeams           = d.claims    || {};
+    window._claimUsernames = d.usernames || {};
+    leagueData.standings   = d.standings || MOCK_LEAGUE.standings;
+    allMatchups            = d.matchups  || [];
+  }
+  function _fetchBoot() {
+    return fetch(GOOGLE_SHEETS_CONFIG.APPS_SCRIPT_URL + '?action=bootstrap').then(r => r.json());
+  }
+  function _loadClaimsLocal() {
+    try { claimedTeams = JSON.parse(localStorage.getItem('gfl_claimed') || '{}');
+          window._claimUsernames = JSON.parse(localStorage.getItem('gfl_usernames') || '{}'); } catch(e){}
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -759,18 +760,28 @@
   // ── Boot ───────────────────────────────────────────────────────
   async function boot() {
     leagueData = MOCK_LEAGUE;
-    await loadClaims();
-    const [standings, matchups] = await Promise.all([
-      loadStandings(), loadMatchupsData()
-    ]);
-    leagueData.standings = standings;
-    allMatchups = matchups;
-
-    currentView = 'division';
-    document.querySelectorAll('.view-tab').forEach(b => {
-      b.classList.toggle('active', b.textContent.trim() === 'Division');
-    });
-    renderStandings(leagueData.standings);
+    function _render() {
+      currentView = 'division';
+      document.querySelectorAll('.view-tab').forEach(b => {
+        b.classList.toggle('active', b.textContent.trim() === 'Division');
+      });
+      renderStandings(leagueData.standings);
+    }
+    if (!isLive()) { _loadClaimsLocal(); _render(); return; }
+    const cached = _cacheLoad();
+    if (cached) {
+      _applyBoot(cached);
+      _render();
+      _fetchBoot().then(d => {
+        if (d.success) { _cacheSave(d); _applyBoot(d); _render(); }
+      }).catch(() => {});
+    } else {
+      try {
+        const d = await _fetchBoot();
+        if (d.success) { _cacheSave(d); _applyBoot(d); }
+      } catch(e) { console.warn('boot failed', e); }
+      _render();
+    }
   }
 
   boot();
