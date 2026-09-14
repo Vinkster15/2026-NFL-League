@@ -852,7 +852,7 @@
         const homeLabel = `<span class="record">${homeRecord}</span><span class="dk-user">${homeDK ? escHtml(homeDK) : ''}</span><span class="team-abbr">${homeAbbr}</span>`;
 
         const scoreCell = played
-          ? `<span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${m.awayScore}</span><span class="score-sep">–</span><span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${m.homeScore}</span><span class="chevron">▾</span>`
+          ? `<span style="color:${awayWins ? 'var(--green)' : 'var(--muted)'}">${Number(m.awayScore).toFixed(2)}</span><span class="score-sep">–</span><span style="color:${homeWins ? 'var(--green)' : 'var(--muted)'}">${Number(m.homeScore).toFixed(2)}</span><span class="chevron">▾</span>`
           : `<span class="vs-label">VS</span><span class="chevron">▾</span>`;
 
         // Main matchup row
