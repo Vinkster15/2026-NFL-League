@@ -913,8 +913,11 @@
     standings = await loadStandings();
     window._matchups = await loadMatchups();
 
-
     populateWeekFilter();
+    renderMatchups();
+
+    // Load lineups for the current week after rendering so cards populate
+    await loadLineups(getCurrentWeek());
     renderMatchups();
   }
 
